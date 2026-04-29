@@ -58,25 +58,50 @@ export default function LandingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showFloat, setShowFloat] = useState(false);
+  const [introVisible, setIntroVisible] = useState(true);
   const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Word-by-word headline reveal
-      gsap.fromTo('.lp-word',
-        { yPercent: 110, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 1.05, stagger: 0.065, ease: 'power4.out', delay: 0.32 }
-      );
+      const startHero = (delay: number) => {
+        gsap.fromTo('.lp-word',
+          { yPercent: 110, opacity: 0 },
+          { yPercent: 0, opacity: 1, duration: 1.05, stagger: 0.065, ease: 'power4.out', delay }
+        );
+        const tl = gsap.timeline({ delay: delay + 0.22 });
+        tl.fromTo('.lp-tag',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.75, ease: 'power4.out' }, 0)
+          .fromTo('.lp-divider', { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.8, ease: 'power4.out', transformOrigin: 'left' }, 0.6)
+          .fromTo('.lp-sub',     { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power4.out' }, 0.72)
+          .fromTo('.lp-cta-btn', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power4.out' }, 0.96)
+          .fromTo('.lp-stat',    { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.65, stagger: 0.09, ease: 'power3.out' }, 1.22);
+      };
 
-      // Sequential entrance
-      const tl = gsap.timeline({ delay: 0.55 });
-      tl.fromTo('.lp-tag',     { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.75, ease: 'power4.out' }, 0)
-        .fromTo('.lp-divider', { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.8, ease: 'power4.out', transformOrigin: 'left' }, 0.6)
-        .fromTo('.lp-sub',     { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power4.out' }, 0.72)
-        .fromTo('.lp-cta-btn', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power4.out' }, 0.96)
-        .fromTo('.lp-stat',    { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.65, stagger: 0.09, ease: 'power3.out' }, 1.22);
+      if (reduced) {
+        setIntroVisible(false);
+        startHero(0.2);
+      } else {
+        // Set initial hidden states for intro elements
+        gsap.set('.lp-intro-kle',  { yPercent: 108 });
+        gsap.set(['.lp-intro-over', '.lp-intro-sub'], { opacity: 0, y: 8 });
+        gsap.set('.lp-intro-line', { scaleX: 0, transformOrigin: 'center' });
+
+        const intro = gsap.timeline({
+          onComplete: () => {
+            startHero(0.15);
+            setTimeout(() => setIntroVisible(false), 400);
+          },
+        });
+        intro
+          .to('.lp-intro-over',    { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 0.28)
+          .to('.lp-intro-kle',     { yPercent: 0, duration: 1.0, ease: 'power4.out' }, 0.52)
+          .to('.lp-intro-line',    { scaleX: 1, duration: 0.72, ease: 'power4.out' }, 1.14)
+          .to('.lp-intro-sub',     { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 1.42)
+          .to('.lp-intro-content', { opacity: 0, duration: 0.38, ease: 'power2.in' }, 2.52)
+          .to('.lp-curtain-top',   { y: '-101%', duration: 0.92, ease: 'expo.inOut' }, 2.64)
+          .to('.lp-curtain-bot',   { y: '101%',  duration: 0.92, ease: 'expo.inOut' }, 2.64);
+      }
 
       if (!reduced) {
         // Hero bg parallax
@@ -165,8 +190,81 @@ export default function LandingPage() {
 
   return (
     <div ref={pageRef} style={{ background: '#0A0A0A', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+      {/* ─────────────────── CINEMATIC INTRO ─────────────────── */}
+      {introVisible && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
+          {/* Ambient radial glow at center — only visible between curtains as they part */}
+          <div style={{
+            position: 'absolute', left: '50%', top: '50%',
+            width: '60vw', height: '60vw', maxWidth: '520px', maxHeight: '520px',
+            transform: 'translate(-50%,-50%)',
+            background: 'radial-gradient(ellipse, rgba(201,168,76,.07) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+          {/* Gold seam hairline — flashes as curtains part */}
+          <div style={{
+            position: 'absolute', left: 0, right: 0, top: 'calc(50% - 0.5px)', height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(201,168,76,.55) 18%, rgba(201,168,76,.55) 82%, transparent 100%)',
+          }} />
+          {/* Top curtain */}
+          <div className="lp-curtain-top" style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '51%',
+            background: '#0A0A0A',
+          }} />
+          {/* Bottom curtain */}
+          <div className="lp-curtain-bot" style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: '51%',
+            background: '#0A0A0A',
+          }} />
+          {/* Center logo content — sits above both curtains */}
+          <div className="lp-intro-content" style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: '1.1rem', zIndex: 2,
+          }}>
+            {/* Overline */}
+            <p className="lp-intro-over" style={{
+              fontSize: '.52rem', letterSpacing: '.34em', textTransform: 'uppercase',
+              color: 'rgba(201,168,76,.7)', fontFamily: 'Inter, sans-serif', fontWeight: 400,
+            }}>Est. 1997 &middot; Belagavi, Karnataka</p>
+            {/* KLE — clipped overflow for slide-up reveal */}
+            <div className="lp-intro-kle-outer">
+              <h1 className="lp-intro-kle" style={{
+                fontFamily: 'Cormorant Garamond, Georgia, serif',
+                fontWeight: 300,
+                fontSize: 'clamp(5.5rem, 18vw, 10.5rem)',
+                color: '#fff',
+                lineHeight: 0.92,
+                letterSpacing: '-0.03em',
+                display: 'block',
+              }}>KLE</h1>
+            </div>
+            {/* Gold line */}
+            <div className="lp-intro-line" style={{
+              width: '64px', height: '1px',
+              background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)',
+            }} />
+            {/* Subtitle */}
+            <p className="lp-intro-sub" style={{
+              fontSize: '.65rem', letterSpacing: '.22em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,.4)', fontFamily: 'Inter, sans-serif', fontWeight: 300,
+            }}>Hotel Management</p>
+          </div>
+        </div>
+      )}
+
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+
+        /* ── Intro curtains ── */
+        .lp-curtain-top, .lp-curtain-bot { will-change: transform; }
+        .lp-intro-kle-outer { overflow: hidden; line-height: 0.92; }
+
+        /* ── Intro ambient glow ── */
+        @keyframes lp-intro-glow {
+          0%,100% { opacity: 0 }
+          50%     { opacity: 1 }
+        }
 
         /* ── Hero image slow zoom ── */
         @keyframes lp-hero-zoom {
