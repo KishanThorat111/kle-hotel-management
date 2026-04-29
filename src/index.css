@@ -1,0 +1,262 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Academic Theme – KLE Hotel Management */
+    --navy: #0D1B3E;
+    --navy-deep: #081123;
+    --navy-light: #1B2F5E;
+    --navy-muted: #2D4270;
+    --gold: #C9A84C;
+    --gold-dark: #A8872E;
+    --gold-pale: #F5E6B8;
+    --gold-bg: #FBF4E3;
+    --white: #FFFFFF;
+    --off-white: #FAFAF8;
+    --light-gray: #F4F3F0;
+    --light-gray-2: #ECEAE4;
+    --border-light: #E5E3DC;
+    --text-primary: #0D1B3E;
+    --text-secondary: #4B5563;
+    --text-muted: #9CA3AF;
+
+    /* shadcn tokens – light mode */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 15%;
+    --primary: 43 48% 55%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 43 72% 88%;
+    --accent-foreground: 222 47% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 43 48% 55%;
+    --radius: 0.5rem;
+
+    --ease-elegant: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: #FFFFFF;
+    color: #0D1B3E;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    color: #0D1B3E;
+  }
+
+  p {
+    line-height: 1.75;
+  }
+
+  :focus-visible {
+    outline: 2px solid #C9A84C;
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #F4F3F0; }
+  ::-webkit-scrollbar-thumb { background: #C9A84C; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #A8872E; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Section label tag */
+  .section-label {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #C9A84C;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: rgba(201, 168, 76, 0.06);
+  }
+
+  /* Navy section label */
+  .section-label-navy {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #FAF7F0;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: rgba(201, 168, 76, 0.1);
+  }
+
+  /* Gold divider line */
+  .gold-line {
+    height: 2px;
+    width: 48px;
+    background: linear-gradient(90deg, #C9A84C, transparent);
+  }
+
+  .gold-line-center {
+    height: 2px;
+    width: 48px;
+    background: linear-gradient(90deg, transparent, #C9A84C, transparent);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Primary Gold Button */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: #C9A84C;
+    color: #FFFFFF;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .btn-primary:hover {
+    background: #A8872E;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(201, 168, 76, 0.35);
+  }
+
+  /* Outline Navy Button */
+  .btn-outline-navy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #FFFFFF;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .btn-outline-navy:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #FFFFFF;
+  }
+
+  /* Outline Gold Button (on light bg) */
+  .btn-outline-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #C9A84C;
+    border: 1.5px solid #C9A84C;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .btn-outline-gold:hover {
+    background: rgba(201, 168, 76, 0.08);
+  }
+
+  /* Card styles */
+  .card-edu {
+    background: #FFFFFF;
+    border: 1px solid #E5E3DC;
+    transition: all 0.35s ease;
+  }
+  .card-edu:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(13, 27, 62, 0.1);
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+
+  /* Navy card */
+  .card-navy {
+    background: #0D1B3E;
+    border: 1px solid rgba(201, 168, 76, 0.15);
+    transition: all 0.35s ease;
+  }
+  .card-navy:hover {
+    border-color: rgba(201, 168, 76, 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Stat number */
+  .stat-number {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 3rem;
+    font-weight: 600;
+    color: #C9A84C;
+    line-height: 1;
+  }
+
+  .stat-number-navy {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 3rem;
+    font-weight: 600;
+    color: #0D1B3E;
+    line-height: 1;
+  }
+}
+
+@layer utilities {
+  .text-navy { color: #0D1B3E; }
+  .text-gold { color: #C9A84C; }
+  .bg-navy { background-color: #0D1B3E; }
+  .bg-gold { background-color: #C9A84C; }
+  .bg-light { background-color: #F4F3F0; }
+  .bg-off-white { background-color: #FAFAF8; }
+  .border-gold { border-color: #C9A84C; }
+  .border-gold-soft { border-color: rgba(201,168,76,0.25); }
+
+  .perspective-1000 { perspective: 1000px; }
+  .preserve-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; }
+}

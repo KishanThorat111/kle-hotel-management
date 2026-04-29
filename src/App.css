@@ -1,0 +1,278 @@
+/* KLE Hotel Management — Luxury Experience Styles */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Lenis smooth scroll */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Custom selection */
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: inherit;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #C9A84C;
+  outline-offset: 2px;
+}
+
+/* Hide default cursor when custom cursor is active */
+@media (pointer: fine) {
+  body {
+    cursor: none;
+  }
+
+  a, button, [role="button"] {
+    cursor: none;
+  }
+}
+
+/* Luxury grid pattern */
+.luxury-grid {
+  background-image:
+    linear-gradient(rgba(201, 168, 76, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Gold glow */
+.glow-gold {
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.3);
+}
+
+/* Pulse glow animation */
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(201, 168, 76, 0.5);
+  }
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 3s ease-in-out infinite;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* Fade in up animation */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scale in animation */
+@keyframes scale-in {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Shimmer gold */
+@keyframes shimmer-gold {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #C9A84C 0%, #EDD68A 50%, #C9A84C 100%);
+  background-size: 200% auto;
+  animation: shimmer-gold 3s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .luxury-grid {
+    background-size: 30px 30px;
+  }
+
+  body, a, button, [role="button"] {
+    cursor: auto !important;
+  }
+}
+
+/* Form input focus */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #C9A84C;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 59, 92, 0.15);
+}
+
+/* Section transitions */
+.section-transition {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Safe area for mobile */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Will change for performance */
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Backdrop blur variations */
+.backdrop-blur-medical {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 59, 92, 0.12);
+}
+
+/* Shine effect */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.shine-effect:hover::after {
+  left: 100%;
+}
+
+/* Magnetic button container */
+.magnetic-wrap {
+  display: inline-block;
+}
+
+/* Word reveal animation */
+.word-reveal {
+  display: inline-block;
+  transform-origin: center bottom;
+}
+
+/* Stats counter */
+.stat-counter {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dialog overlay */
+[data-state="open"] > [data-radix-dialog-overlay] {
+  animation: overlay-show 0.3s ease;
+}
+
+@keyframes overlay-show {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+[data-state="open"] > [data-radix-dialog-content] {
+  animation: content-show 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes content-show {
+  from { 
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

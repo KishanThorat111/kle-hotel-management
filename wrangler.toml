@@ -1,0 +1,6 @@
+name = "kle-hotel-management"
+compatibility_date = "2026-03-27"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
