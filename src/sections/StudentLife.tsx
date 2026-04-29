@@ -5,13 +5,6 @@ import { motion } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const activities = [
-  { label: 'Culinary Competitions', image: '/images/chef-students.jpg', size: 'large' },
-  { label: 'F&B Service Training', image: '/images/fb-service.jpg', size: 'small' },
-  { label: 'Campus Events', image: '/images/campus.jpg', size: 'small' },
-  { label: 'Front Office Practice', image: '/images/front-office.jpg', size: 'medium' },
-  { label: 'Housekeeping Drills', image: '/images/accommodation.jpg', size: 'medium' },
-];
 
 const experiences = [
   { number: '01', title: 'Practical Lab Sessions', desc: 'Daily hands-on labs in kitchens, training restaurants, and front office setups.' },

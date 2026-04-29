@@ -1,10 +1,10 @@
-﻿import { useState, useEffect, useRef, FormEvent } from 'react';
+﻿import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, CheckCircle, MessageSquare, ExternalLink,
-  Clock, ChefHat, Coffee, ConciergeBell, Sparkles,
+  ChefHat, Coffee, ConciergeBell, Sparkles,
   ArrowRight, Shield, TrendingUp, Globe, Star,
 } from 'lucide-react';
 

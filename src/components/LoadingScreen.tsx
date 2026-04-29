@@ -19,7 +19,7 @@ export default function LoadingScreen() {
     );
 
     tl.fromTo(
-      textRef.current?.querySelectorAll('.reveal-text'),
+      Array.from(textRef.current?.querySelectorAll('.reveal-text') ?? []),
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power3.out' },
       '-=0.6'
