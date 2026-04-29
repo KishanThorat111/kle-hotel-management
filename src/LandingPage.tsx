@@ -234,7 +234,7 @@ export default function LandingPage() {
           box-shadow: 0 26px 60px rgba(0,0,0,.72), 0 0 0 1px rgba(201,168,76,.26);
         }
         .lp-prog img {
-          width: 100%; height: 100%; object-fit: cover; display: block;
+          width: 100%; height: 100%; object-fit: cover; object-position: left center; display: block;
           transition: transform .8s cubic-bezier(.16,1,.3,1);
           filter: brightness(.9);
         }
@@ -343,7 +343,7 @@ export default function LandingPage() {
           <img
             src="/images/campus.jpg"
             alt="KLE Campus"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%', animation: 'lp-hero-zoom 14s ease-out forwards' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', animation: 'lp-hero-zoom 14s ease-out forwards' }}
             loading="eager"
           />
           {/* Depth gradient layers */}
@@ -487,7 +487,7 @@ export default function LandingPage() {
             {/* Parallax image */}
             <div className="lp-reveal" style={{ opacity: 0, position: 'relative', overflow: 'hidden', aspectRatio: '16/9', borderRadius: '2px' }}>
               <div className="lp-trust-img" style={{ position: 'absolute', inset: '-16% 0', willChange: 'transform' }}>
-                <img src="/images/team.jpg" alt="KLE Students" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', filter: 'brightness(.9)' }} loading="lazy" />
+                <img src="/images/team.jpg" alt="KLE Students" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', filter: 'brightness(.9)', transform: 'scaleX(-1)' }} loading="lazy" />
               </div>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,10,10,.84) 0%, rgba(10,10,10,.38) 52%, transparent 100%)' }} />
               <div style={{ position: 'absolute', bottom: '1.6rem', left: '1.75rem' }}>
@@ -561,7 +561,7 @@ export default function LandingPage() {
           {/* Parallax placement image */}
           <div className="lp-reveal" style={{ opacity: 0, position: 'relative', overflow: 'hidden', aspectRatio: '16/9', marginBottom: '1.6rem', borderRadius: '2px' }}>
             <div className="lp-place-img" style={{ position: 'absolute', inset: '-14% 0', willChange: 'transform' }}>
-              <img src="/images/front-office.jpg" alt="Industrial Training" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(.88)' }} loading="lazy" />
+              <img src="/images/front-office.jpg" alt="Industrial Training" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', filter: 'brightness(.88)' }} loading="lazy" />
             </div>
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.28)' }} />
             <div style={{ position: 'absolute', top: '1.1rem', right: '1.1rem', padding: '.75rem 1.2rem', background: '#C9A84C' }}>

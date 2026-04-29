@@ -55,7 +55,8 @@ export default function Hero() {
         <img
           src="/images/campus.jpg"
           alt="KLE Campus"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: 'left center' }}
           loading="eager"
         />
         {/* Multi-layer overlay for legibility */}

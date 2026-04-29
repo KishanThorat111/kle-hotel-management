@@ -75,6 +75,7 @@ export default function Facilities() {
               src="/images/culinary-kitchen.jpg"
               alt="Professional Kitchen Lab"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+              style={{ objectPosition: 'left center' }}
               loading="lazy"
             />
             <div
@@ -92,6 +93,7 @@ export default function Facilities() {
                 src="/images/accommodation.jpg"
                 alt="Student Hostel"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
                 loading="lazy"
               />
               <div
@@ -106,6 +108,7 @@ export default function Facilities() {
                 src="/images/campus.jpg"
                 alt="KLE Campus"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
                 loading="lazy"
               />
               <div

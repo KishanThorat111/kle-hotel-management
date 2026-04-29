@@ -113,6 +113,7 @@ export default function Placements() {
                   src="/images/front-office.jpg"
                   alt="Student in front office training"
                   className="w-full h-full object-cover"
+                  style={{ objectPosition: 'left center' }}
                   loading="lazy"
                 />
               </div>

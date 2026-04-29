@@ -58,6 +58,7 @@ export default function StudentLife() {
               src="/images/chef-students.jpg"
               alt="Culinary training"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+              style={{ objectPosition: 'left center' }}
             />
             <div className="absolute bottom-3 left-3 px-3 py-1.5" style={{ background: 'rgba(13,27,62,0.8)' }}>
               <p className="text-[10px] tracking-widest uppercase text-white">Culinary Competitions</p>
@@ -69,6 +70,7 @@ export default function StudentLife() {
                 src="/images/fb-service.jpg"
                 alt="F&B training"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
               />
               <div className="absolute bottom-2 left-2 px-2 py-1" style={{ background: 'rgba(13,27,62,0.8)' }}>
                 <p className="text-[9px] tracking-widest uppercase text-white">F&B Service</p>
@@ -79,6 +81,7 @@ export default function StudentLife() {
                 src="/images/campus.jpg"
                 alt="Campus life"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
               />
               <div className="absolute bottom-2 left-2 px-2 py-1" style={{ background: 'rgba(13,27,62,0.8)' }}>
                 <p className="text-[9px] tracking-widest uppercase text-white">Campus Events</p>
@@ -89,6 +92,7 @@ export default function StudentLife() {
                 src="/images/front-office.jpg"
                 alt="Front office practice"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
               />
               <div className="absolute bottom-2 left-2 px-2 py-1" style={{ background: 'rgba(13,27,62,0.8)' }}>
                 <p className="text-[9px] tracking-widest uppercase text-white">Front Office</p>
@@ -99,6 +103,7 @@ export default function StudentLife() {
                 src="/images/accommodation.jpg"
                 alt="Hostel life"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                style={{ objectPosition: 'left center' }}
               />
               <div className="absolute bottom-2 left-2 px-2 py-1" style={{ background: 'rgba(13,27,62,0.8)' }}>
                 <p className="text-[9px] tracking-widest uppercase text-white">Hostel Life</p>

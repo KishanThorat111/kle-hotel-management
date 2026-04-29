@@ -71,7 +71,7 @@ export default function About() {
                 src="/images/team.jpg"
                 alt="KLE Faculty and Students"
                 className="w-full h-full object-cover"
-                style={{ objectPosition: 'center 30%' }}
+                style={{ objectPosition: 'left 25%' }}
                 loading="lazy"
               />
               <div

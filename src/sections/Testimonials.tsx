@@ -111,7 +111,8 @@ export default function Testimonials() {
                 <img
                   src={t.image}
                   alt={t.name}
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'left 15%' }}
                 />
               </div>
 

@@ -102,6 +102,7 @@ export default function Programs() {
                   src={prog.image}
                   alt={prog.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  style={{ objectPosition: 'left center' }}
                 />
                 {/* Gold overlay on hover */}
                 <div
