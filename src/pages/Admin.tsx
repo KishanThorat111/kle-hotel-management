@@ -29,19 +29,28 @@ function waLink(e: Enquiry) {
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso + 'Z');
+  // D1 stores as 'YYYY-MM-DD HH:MM:SS' without Z — append Z only if no tz info
+  const s = /[Zz+\-]\d*$/.test(iso) ? iso : iso.replace(' ', 'T') + 'Z';
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return iso;
   return d.toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
   });
 }
 
+function csvSafe(v: unknown): string {
+  const s = String(v ?? '').replace(/"/g, '""');
+  if (/^[=+\-@\t\r]/.test(s)) return `"'${s}"`;
+  return `"${s}"`;
+}
+
 function exportCSV(data: Enquiry[]) {
-  const header = 'ID,Name,Phone,Interest,Message,Source,Date';
+  const header = 'ID,Name,Phone,Interest,Source,Date';
   const rows = data.map(e =>
-    [e.id, `"${e.name}"`, e.phone, e.interest, `"${e.message}"`, e.source, e.created_at].join(',')
+    [e.id, csvSafe(e.name), csvSafe(e.phone), csvSafe(e.interest), csvSafe(e.source), csvSafe(e.created_at)].join(',')
   );
-  const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+  const blob = new Blob([['\uFEFF', header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `kle-enquiries-${Date.now()}.csv`;
@@ -161,23 +170,26 @@ export default function Admin() {
   const load = useCallback(async (p = 1, currentPin = pin) => {
     setLoading(true);
     try {
+      const headers = { 'Authorization': `Bearer ${currentPin}` };
       const [eRes, sRes] = await Promise.all([
-        fetch(`/api/enquiries?pin=${currentPin}&page=${p}`),
-        fetch(`/api/stats?pin=${currentPin}`),
+        fetch(`/api/enquiries?page=${p}`, { headers }),
+        fetch('/api/stats', { headers }),
       ]);
-      if (eRes.status === 401) { setAuthed(false); setLoading(false); return; }
+      if (eRes.status === 401) { setAuthed(false); return; }
       const eData = await eRes.json() as { data: Enquiry[]; total: number };
       const sData = await sRes.json() as Stats;
       setEnquiries(eData.data ?? []);
       setTotal(eData.total ?? 0);
       setStats(sData);
       setPage(p);
-    } catch { /* ignore */ }
-    setLoading(false);
+    } catch { /* network error — keep existing data */ }
+    finally { setLoading(false); }
   }, [pin]);
 
   const handleLogin = async (p: string): Promise<string | null> => {
-    const res = await fetch(`/api/enquiries?pin=${encodeURIComponent(p)}&page=1`);
+    const res = await fetch('/api/enquiries?page=1', {
+      headers: { 'Authorization': `Bearer ${encodeURIComponent(p)}` },
+    });
     if (res.status === 401) return 'Incorrect PIN';
     if (!res.ok) return 'Server error, please try again';
     const data = await res.json() as { data: Enquiry[]; total: number };
@@ -185,8 +197,7 @@ export default function Admin() {
     setEnquiries(data.data ?? []);
     setTotal(data.total ?? 0);
     setAuthed(true);
-    // Load stats separately
-    fetch(`/api/stats?pin=${encodeURIComponent(p)}`)
+    fetch('/api/stats', { headers: { 'Authorization': `Bearer ${encodeURIComponent(p)}` } })
       .then(r => r.json())
       .then(s => setStats(s as Stats))
       .catch(() => null);
@@ -196,7 +207,10 @@ export default function Admin() {
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this enquiry?')) return;
     setDeleting(id);
-    await fetch(`/api/enquiry/${id}?pin=${pin}`, { method: 'DELETE' });
+    await fetch(`/api/enquiry/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${pin}` },
+    });
     setDeleting(null);
     load(page);
   };
