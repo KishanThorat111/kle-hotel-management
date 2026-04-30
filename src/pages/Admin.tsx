@@ -49,9 +49,18 @@ function exportCSV(data: Enquiry[]) {
 }
 
 // ─── Login screen ──────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: (pin: string) => void }) {
+function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | null> }) {
   const [pin, setPin] = useState('');
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!pin.trim()) { setErr('Enter the admin PIN'); return; }
+    setBusy(true);
+    const error = await onLogin(pin);
+    setBusy(false);
+    if (error) setErr(error);
+  };
 
   return (
     <div
@@ -89,7 +98,7 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => void }) {
             placeholder="Enter admin PIN"
             value={pin}
             onChange={e => { setPin(e.target.value); setErr(''); }}
-            onKeyDown={e => e.key === 'Enter' && onLogin(pin)}
+            onKeyDown={e => e.key === 'Enter' && submit()}
             className="w-full px-4 py-3 rounded-lg text-sm outline-none text-center tracking-widest"
             style={{
               background: 'rgba(255,255,255,0.05)',
@@ -102,11 +111,12 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => void }) {
         </div>
 
         <button
-          onClick={() => onLogin(pin)}
+          onClick={submit}
+          disabled={busy}
           className="w-full py-3 rounded-lg text-sm font-medium"
-          style={{ background: 'linear-gradient(135deg, #C9A84C, #EDD68A)', color: '#081123', fontFamily: 'Inter, sans-serif' }}
+          style={{ background: 'linear-gradient(135deg, #C9A84C, #EDD68A)', color: '#081123', fontFamily: 'Inter, sans-serif', opacity: busy ? 0.7 : 1 }}
         >
-          Access Dashboard
+          {busy ? 'Checking…' : 'Access Dashboard'}
         </button>
       </div>
     </div>
@@ -140,7 +150,6 @@ function StatCard({ icon: Icon, label, value, gold }: { icon: React.ElementType;
 export default function Admin() {
   const [pin, setPin]             = useState('');
   const [authed, setAuthed]       = useState(false);
-  const [_loginErr, setLoginErr]  = useState('');
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [stats, setStats]         = useState<Stats | null>(null);
   const [total, setTotal]         = useState(0);
@@ -156,7 +165,7 @@ export default function Admin() {
         fetch(`/api/enquiries?pin=${currentPin}&page=${p}`),
         fetch(`/api/stats?pin=${currentPin}`),
       ]);
-      if (eRes.status === 401) { setAuthed(false); return; }
+      if (eRes.status === 401) { setAuthed(false); setLoading(false); return; }
       const eData = await eRes.json() as { data: Enquiry[]; total: number };
       const sData = await sRes.json() as Stats;
       setEnquiries(eData.data ?? []);
@@ -167,18 +176,21 @@ export default function Admin() {
     setLoading(false);
   }, [pin]);
 
-  const handleLogin = async (p: string) => {
-    if (!p.trim()) { setLoginErr('Enter the admin PIN'); return; }
-    setLoading(true);
-    const res = await fetch(`/api/enquiries?pin=${p}&page=1`);
-    setLoading(false);
-    if (res.status === 401) { setLoginErr('Incorrect PIN'); return; }
-    setPin(p);
-    setAuthed(true);
+  const handleLogin = async (p: string): Promise<string | null> => {
+    const res = await fetch(`/api/enquiries?pin=${encodeURIComponent(p)}&page=1`);
+    if (res.status === 401) return 'Incorrect PIN';
+    if (!res.ok) return 'Server error, please try again';
     const data = await res.json() as { data: Enquiry[]; total: number };
+    setPin(p);
     setEnquiries(data.data ?? []);
     setTotal(data.total ?? 0);
-    load(1, p);
+    setAuthed(true);
+    // Load stats separately
+    fetch(`/api/stats?pin=${encodeURIComponent(p)}`)
+      .then(r => r.json())
+      .then(s => setStats(s as Stats))
+      .catch(() => null);
+    return null;
   };
 
   const handleDelete = async (id: number) => {

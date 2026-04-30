@@ -37,6 +37,7 @@ export default function EnquiryPopup() {
   const [interest, setInterest]   = useState('Admission');
   const [nameErr, setNameErr]      = useState('');
   const [phoneErr, setPhoneErr]    = useState('');
+  const [submitErr, setSubmitErr]  = useState('');
   const [loading, setLoading]     = useState(false);
 
   const dismiss = useCallback(() => {
@@ -86,17 +87,23 @@ export default function EnquiryPopup() {
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
-    await submitEnquiry({ name: name.trim(), phone: phone.replace(/\D/g, '').slice(-10), interest, source: 'popup' });
-    sessionStorage.setItem(STORAGE_KEY, '1');
+    setSubmitErr('');
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const ok = await submitEnquiry({ name: name.trim(), phone: cleanPhone, interest, source: 'popup' });
     setLoading(false);
+    if (!ok) {
+      setSubmitErr('Something went wrong. Please try again or use WhatsApp below.');
+      return;
+    }
+    sessionStorage.setItem(STORAGE_KEY, '1');
     setStep('done');
 
     // Auto-open WhatsApp after 2.5s
+    const waMsg = encodeURIComponent(
+      `Hello KLE Hotel Management! 👋\n\nI'm ${name.trim()} and I'm interested in: *${interest}*.\nMy number: +91 ${cleanPhone}\n\nPlease guide me.`
+    );
     setTimeout(() => {
-      const msg = encodeURIComponent(
-        `Hello KLE Hotel Management! 👋\n\nI'm ${name.trim()} and I'm interested in: *${interest}*.\nMy number: +91 ${phone.replace(/\D/g, '').slice(-10)}\n\nPlease guide me.`
-      );
-      window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
+      window.open(`https://wa.me/${WA}?text=${waMsg}`, '_blank');
       dismiss();
     }, 2500);
   };
@@ -202,6 +209,13 @@ export default function EnquiryPopup() {
                 </div>
                 {phoneErr && <p className="text-xs mt-1 ml-1" style={{ color: '#f87171' }}>{phoneErr}</p>}
               </div>
+
+              {/* Submit error */}
+              {submitErr && (
+                <p className="text-xs mb-3 px-1 text-center" style={{ color: '#f87171', fontFamily: 'Inter, sans-serif' }}>
+                  {submitErr}
+                </p>
+              )}
 
               {/* Submit */}
               <button
