@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -55,7 +56,7 @@ export default function StudentLife() {
         <div className="sl-reveal opacity-0 grid grid-cols-12 gap-3 mb-20" style={{ height: '460px' }}>
           <div className="col-span-12 md:col-span-6 relative overflow-hidden">
             <img
-              src="/images/chef-students.jpg"
+              src={img('chef-students')}
               alt="Culinary training"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               style={{ objectPosition: 'left center' }}
@@ -67,7 +68,7 @@ export default function StudentLife() {
           <div className="col-span-12 md:col-span-6 grid grid-cols-2 gap-3">
             <div className="relative overflow-hidden">
               <img
-                src="/images/fb-service.jpg"
+                src={img('fb-service')}
                 alt="F&B training"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}
@@ -78,7 +79,7 @@ export default function StudentLife() {
             </div>
             <div className="relative overflow-hidden">
               <img
-                src="/images/campus.jpg"
+                src={img('campus')}
                 alt="Campus life"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}
@@ -89,7 +90,7 @@ export default function StudentLife() {
             </div>
             <div className="relative overflow-hidden">
               <img
-                src="/images/front-office.jpg"
+                src={img('front-office')}
                 alt="Front office practice"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}
@@ -100,7 +101,7 @@ export default function StudentLife() {
             </div>
             <div className="relative overflow-hidden">
               <img
-                src="/images/accommodation.jpg"
+                src={img('accommodation')}
                 alt="Hostel life"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}

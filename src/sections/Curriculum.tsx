@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ChefHat, Coffee, ConciergeBell, Sparkles, Cake, CalendarCheck } from 'lucide-react';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -128,7 +129,7 @@ export default function Curriculum() {
               style={{ aspectRatio: '3/4', maxHeight: '600px', border: '1px solid rgba(201,168,76,0.2)' }}
             >
               <img
-                src="/images/chef-students.jpg"
+                src={img('chef-students')}
                 alt="Students in culinary training"
                 className="w-full h-full object-cover"
                 loading="lazy"

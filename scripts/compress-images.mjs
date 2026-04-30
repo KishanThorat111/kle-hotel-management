@@ -10,9 +10,10 @@
 import sharp from 'sharp';
 import { readdirSync, mkdirSync, statSync } from 'fs';
 import { join, extname, basename } from 'path';
+import { fileURLToPath } from 'url';
 
-const INPUT_DIR  = new URL('../public/images', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
-const OUTPUT_DIR = new URL('../public/images/webp', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const INPUT_DIR  = fileURLToPath(new URL('../public/images', import.meta.url));
+const OUTPUT_DIR = fileURLToPath(new URL('../public/images/webp', import.meta.url));
 
 const QUALITY = 82; // 80-85 is visually lossless for photos
 

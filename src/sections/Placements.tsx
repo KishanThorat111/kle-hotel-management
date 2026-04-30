@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { CheckCircle2, TrendingUp, Globe2, Briefcase } from 'lucide-react';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -110,7 +111,7 @@ export default function Placements() {
             <div className="relative">
               <div className="overflow-hidden" style={{ aspectRatio: '4/5', maxHeight: '540px' }}>
                 <img
-                  src="/images/front-office.jpg"
+                  src={img('front-office')}
                   alt="Student in front office training"
                   className="w-full h-full object-cover"
                   style={{ objectPosition: 'left center' }}

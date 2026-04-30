@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown, MapPin, Award } from 'lucide-react';
 import AnimatedCounter from '@/components/AnimatedCounter';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -53,7 +54,7 @@ export default function Hero() {
       {/* Background */}
       <div ref={bgRef} className="absolute inset-0 w-full h-[115%] -top-[7.5%]">
         <img
-          src="/images/campus.jpg"
+          src={img('campus')}
           alt="KLE Campus"
           className="w-full h-full object-cover"
           style={{ objectPosition: 'left center' }}

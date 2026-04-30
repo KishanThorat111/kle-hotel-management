@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ChefHat, UtensilsCrossed, Bed, CalendarDays } from 'lucide-react';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -72,7 +73,7 @@ export default function Facilities() {
           {/* Large left image */}
           <div className="col-span-12 md:col-span-7 overflow-hidden relative" style={{ height: '420px' }}>
             <img
-              src="/images/culinary-kitchen.jpg"
+              src={img('culinary-kitchen')}
               alt="Professional Kitchen Lab"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               style={{ objectPosition: 'left center' }}
@@ -90,7 +91,7 @@ export default function Facilities() {
           <div className="col-span-12 md:col-span-5 flex flex-col gap-4">
             <div className="overflow-hidden relative" style={{ flex: 1, minHeight: '200px' }}>
               <img
-                src="/images/accommodation.jpg"
+                src={img('accommodation')}
                 alt="Student Hostel"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}
@@ -105,7 +106,7 @@ export default function Facilities() {
             </div>
             <div className="overflow-hidden relative" style={{ flex: 1, minHeight: '200px' }}>
               <img
-                src="/images/campus.jpg"
+                src={img('campus')}
                 alt="KLE Campus"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 style={{ objectPosition: 'left center' }}

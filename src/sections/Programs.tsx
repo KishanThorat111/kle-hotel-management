@@ -3,12 +3,13 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { Clock, ChevronRight } from 'lucide-react';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const programs = [
   {
-    image: '/images/chef-students.jpg',
+    image: img('chef-students'),
     title: 'Culinary Operations',
     subtitle: 'Food Production & Patisserie',
     duration: '3 Years',
@@ -16,7 +17,7 @@ const programs = [
     tags: ['Food Production', 'Bakery & Confectionery', 'Nutrition'],
   },
   {
-    image: '/images/fb-service.jpg',
+    image: img('fb-service'),
     title: 'Food & Beverage Service',
     subtitle: 'Restaurant & Bar Operations',
     duration: '3 Years',
@@ -24,7 +25,7 @@ const programs = [
     tags: ['Service Skills', 'Beverage Knowledge', 'Fine Dining'],
   },
   {
-    image: '/images/accommodation.jpg',
+    image: img('accommodation'),
     title: 'Accommodation Management',
     subtitle: 'Housekeeping & Room Division',
     duration: '3 Years',
@@ -32,7 +33,7 @@ const programs = [
     tags: ['Housekeeping', 'Laundry', 'Room Division'],
   },
   {
-    image: '/images/front-office.jpg',
+    image: img('front-office'),
     title: 'Front Office Operations',
     subtitle: 'Guest Relations & Hotel Operations',
     duration: '3 Years',

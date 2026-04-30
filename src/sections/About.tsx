@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { GraduationCap, Building2, Globe2 } from 'lucide-react';
+import { img } from '@/lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -68,7 +69,7 @@ export default function About() {
           <div className="about-reveal opacity-0 relative">
             <div className="relative overflow-hidden" style={{ aspectRatio: '4/5', maxHeight: '560px' }}>
               <img
-                src="/images/team.jpg"
+                src={img('team')}
                 alt="KLE Faculty and Students"
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'left 25%' }}

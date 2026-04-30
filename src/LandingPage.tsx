@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, CheckCircle, MessageSquare, ChevronDown, Shield, ExternalLink } from 'lucide-react';
 import Lenis from 'lenis';
+import { img } from './lib/cdn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -544,7 +545,7 @@ export default function LandingPage() {
       {/* ═══════════════════════ HERO ═══════════════════════ */}
       <section ref={heroRef} className="lp-hero" style={{ position: 'relative', minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden' }}>
         <div className="lp-hero-bg" style={{ position: 'absolute', inset: '-20% 0', willChange: 'transform' }}>
-          <img src="/images/campus.jpg" alt="KLE Campus" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', animation: 'lp-hero-zoom 18s ease-out forwards' }} loading="eager" fetchPriority="high" />
+          <img src={img('campus')} alt="KLE Campus" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', animation: 'lp-hero-zoom 18s ease-out forwards' }} loading="eager" fetchPriority="high" />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(170deg, rgba(8,8,8,.72) 0%, rgba(8,8,8,.28) 30%, rgba(8,8,8,.84) 66%, rgba(8,8,8,1) 100%)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201,168,76,.045) 0%, transparent 65%)' }} />
         </div>
