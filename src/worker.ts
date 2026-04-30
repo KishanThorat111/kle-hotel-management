@@ -176,34 +176,43 @@ async function isEnquiryRateLimited(env: Env, ip: string): Promise<boolean> {
 let dbReady = false;
 async function ensureDB(env: Env): Promise<void> {
   if (dbReady) return;
-  await env.DB.exec(`
-    CREATE TABLE IF NOT EXISTS enquiries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      interest TEXT NOT NULL DEFAULT 'Admission',
-      message TEXT DEFAULT '',
-      source TEXT DEFAULT 'popup',
-      ip TEXT DEFAULT '',
-      user_agent TEXT DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS admin_sessions (
-      token TEXT PRIMARY KEY,
-      expires_at TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS login_attempts (
-      ip TEXT PRIMARY KEY,
-      count INTEGER DEFAULT 1,
-      window_start TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS site_content (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL,
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
+  // Use individual prepare().run() — more reliable than exec() for multi-statement SQL in D1
+  await Promise.all([
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS enquiries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        interest TEXT NOT NULL DEFAULT 'Admission',
+        message TEXT DEFAULT '',
+        source TEXT DEFAULT 'popup',
+        ip TEXT DEFAULT '',
+        user_agent TEXT DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ).run(),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS admin_sessions (
+        token TEXT PRIMARY KEY,
+        expires_at TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    ).run(),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS login_attempts (
+        ip TEXT PRIMARY KEY,
+        count INTEGER DEFAULT 1,
+        window_start TEXT DEFAULT (datetime('now'))
+      )`,
+    ).run(),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS site_content (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`,
+    ).run(),
+  ]);
   dbReady = true;
 }
 

@@ -7,6 +7,7 @@ export default function CustomCursor() {
   const [isHovering, setIsHovering] = useState(false);
   const [isPointer, setIsPointer] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const isVisibleRef = useRef(false);
 
   useEffect(() => {
     // Check if touch device
@@ -17,8 +18,11 @@ export default function CustomCursor() {
     const cursorDot = cursorDotRef.current;
     if (!cursor || !cursorDot) return;
 
-    const pos = { x: 0, y: 0 };
-    const mouse = { x: 0, y: 0 };
+    // Center via GSAP xPercent/yPercent — avoids conflict with x/y quickSetter
+    gsap.set([cursor, cursorDot], { xPercent: -50, yPercent: -50 });
+
+    const pos = { x: -200, y: -200 };
+    const mouse = { x: -200, y: -200 };
     const speed = 0.15;
 
     const xSet = gsap.quickSetter(cursor, 'x', 'px');
@@ -29,16 +33,24 @@ export default function CustomCursor() {
     const handleMouseMove = (e: MouseEvent) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      
-      if (!isVisible) setIsVisible(true);
-      
-      // Instant dot follow
       xDotSet(mouse.x);
       yDotSet(mouse.y);
+      if (!isVisibleRef.current) {
+        isVisibleRef.current = true;
+        setIsVisible(true);
+      }
     };
 
-    const handleMouseEnter = () => setIsVisible(true);
-    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => {
+      if (mouse.x !== -200) {
+        isVisibleRef.current = true;
+        setIsVisible(true);
+      }
+    };
+    const handleMouseLeave = () => {
+      isVisibleRef.current = false;
+      setIsVisible(false);
+    };
 
     // Animation loop for smooth cursor following
     const tick = () => {
@@ -55,7 +67,6 @@ export default function CustomCursor() {
       const target = e.target as HTMLElement;
       const isHoverable = target.closest('a, button, [data-cursor="pointer"], input, textarea, select');
       const isClickable = window.getComputedStyle(target).cursor === 'pointer';
-      
       setIsPointer(!!isHoverable || isClickable);
       setIsHovering(!!isHoverable);
     };
@@ -72,7 +83,7 @@ export default function CustomCursor() {
       document.removeEventListener('mouseleave', handleMouseLeave);
       gsap.ticker.remove(tick);
     };
-  }, [isVisible]);
+  }, []); // run once — isVisibleRef avoids stale closure
 
   // Don't render on touch devices
   if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
@@ -84,12 +95,9 @@ export default function CustomCursor() {
       {/* Main cursor ring */}
       <div
         ref={cursorRef}
-        className={`fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference transition-transform duration-150 ${
+        className={`fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference transition-opacity duration-150 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{
-          transform: 'translate(-50%, -50%)',
-        }}
       >
         <div
           className={`rounded-full transition-all duration-300 ${
@@ -110,9 +118,6 @@ export default function CustomCursor() {
         className={`fixed top-0 left-0 pointer-events-none z-[9999] transition-opacity duration-150 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{
-          transform: 'translate(-50%, -50%)',
-        }}
       >
         <div 
           className={`w-1.5 h-1.5 rounded-full transition-transform duration-150 ${
