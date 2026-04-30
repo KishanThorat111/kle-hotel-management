@@ -26,9 +26,11 @@ interface D1Stmt {
   first<T = Record<string, unknown>>(): Promise<T | null>;
 }
 
-// ─── Allowed origins (add your custom domain when ready) ─────────────────
+// ─── Allowed origins ─────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
-  'https://kle-hotel-management.kishan-6c3.workers.dev',
+  'https://kle-hotel-management.kishan-6c3.workers.dev',  // fallback workers.dev
+  'https://kle-hotel-management.kodspot.co.in',            // production subdomain
+  'https://kodspot.co.in',                                  // root domain
 ];
 
 function corsHeaders(origin: string | null) {
