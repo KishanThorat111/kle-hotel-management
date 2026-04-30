@@ -158,6 +158,12 @@ export default {
       }
     }
 
+    // ─── /admin → serve admin.html ───────────────────────────────────
+    if (url.pathname === '/admin' || url.pathname === '/admin/') {
+      const adminReq = new Request(url.origin + '/admin.html', request);
+      return env.ASSETS.fetch(adminReq);
+    }
+
     // ─── Static SPA assets ────────────────────────────────────────────
     return env.ASSETS.fetch(request);
   },
