@@ -1,5 +1,11 @@
 /* KLE Hotel Management — Luxury Experience Styles */
 
+/* Loading screen — door shimmer sweep */
+@keyframes doorScan {
+  from { top: -120px; }
+  to   { top: 100%; }
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;

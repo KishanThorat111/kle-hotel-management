@@ -5,6 +5,7 @@ import './App.css';
 
 import { useLenis } from './hooks/useLenis';
 
+import LoadingScreen from './components/LoadingScreen';
 import Navigation from './components/Navigation';
 import ScrollProgress from './components/ScrollProgress';
 
@@ -33,6 +34,7 @@ function App() {
 
   return (
     <div ref={mainRef} className="relative min-h-screen overflow-x-hidden" style={{ background: '#FFFFFF' }}>
+      <LoadingScreen />
       <ScrollProgress />
       <Navigation />
 
