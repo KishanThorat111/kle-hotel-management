@@ -17,26 +17,26 @@ export default function Navigation() {
   const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 60);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 60);
+
+      // Find active section: last section whose top edge is above scroll + nav offset
+      const offset = 100;
+      let current = '';
+      navItems.forEach((item) => {
+        const el = document.querySelector(item.href) as HTMLElement | null;
+        if (el && el.getBoundingClientRect().top + window.scrollY - offset <= window.scrollY) {
+          current = item.href.slice(1);
+        }
+      });
+      setActiveSection(current);
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveSection(entry.target.id);
-        });
-      },
-      { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' }
-    );
-
-    navItems.forEach((item) => {
-      const el = document.querySelector(item.href);
-      if (el) observer.observe(el);
-    });
+    handleScroll(); // run once on mount to set initial state
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
     };
   }, []);
 

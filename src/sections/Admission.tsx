@@ -2,7 +2,8 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
-import { FileText, CheckCircle, MessageSquare, GraduationCap, Phone, Mail, MapPin } from 'lucide-react';
+import { FileText, CheckCircle, MessageSquare, GraduationCap, Phone, Mail, MapPin, ClipboardList } from 'lucide-react';
+import { track } from '@/lib/track';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -63,6 +64,11 @@ export default function Admission() {
   const openWhatsApp = () => {
     const msg = encodeURIComponent('Hello, I am interested in admission at KLE Graduate School of Hotel Management, Belagavi. Please guide me through the process.');
     window.open(`https://wa.me/916364504056?text=${msg}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const openApplyForm = () => {
+    track('apply_click', { source: 'admission_section' });
+    window.dispatchEvent(new CustomEvent('kle:open-popup', { detail: { source: 'apply_now' } }));
   };
 
   return (
@@ -191,6 +197,16 @@ export default function Admission() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
+              <motion.button
+                onClick={openApplyForm}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-5 text-xs font-semibold tracking-widest uppercase transition-all duration-300"
+                style={{ background: '#C9A84C', color: '#fff' }}
+                whileHover={{ scale: 1.02, background: '#A8872E' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ClipboardList className="w-4 h-4" />
+                Apply for Admission
+              </motion.button>
               <motion.button
                 onClick={openWhatsApp}
                 className="flex-1 btn-primary justify-center"
