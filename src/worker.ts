@@ -14,15 +14,16 @@ export interface Env {
   ASSETS: { fetch(req: Request): Promise<Response> };
   DB: {
     exec(sql: string): Promise<unknown>;
-    prepare(sql: string): {
-      bind(...values: unknown[]): {
-        run(): Promise<unknown>;
-        all(): Promise<{ results: Record<string, unknown>[] }>;
-      };
-      first<T>(): Promise<T | null>;
-    };
+    prepare(sql: string): D1Stmt;
   };
   ADMIN_PIN: string;
+}
+
+interface D1Stmt {
+  bind(...values: unknown[]): D1Stmt;
+  run(): Promise<unknown>;
+  all(): Promise<{ results: Record<string, unknown>[] }>;
+  first<T = Record<string, unknown>>(): Promise<T | null>;
 }
 
 const CORS = {
@@ -127,15 +128,6 @@ export default {
         // GET /api/stats
         if (request.method === 'GET' && url.pathname === '/api/stats') {
           if (!checkPin(env, url)) return json({ ok: false, error: 'Unauthorized' }, 401);
-
-          const { results } = await env.DB.prepare(`
-            SELECT
-              COUNT(*) as total,
-              SUM(CASE WHEN date(created_at) = date('now') THEN 1 ELSE 0 END) as today,
-              SUM(CASE WHEN date(created_at) >= date('now', '-7 days') THEN 1 ELSE 0 END) as week,
-              interest, COUNT(*) as cnt
-            FROM enquiries GROUP BY interest
-          `).all();
 
           const total_row = await env.DB.prepare(
             `SELECT COUNT(*) as total,
