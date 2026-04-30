@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:preview": "npm run build && wrangler deploy --branch preview"
+    "deploy:preview": "npm run build && wrangler deploy --branch preview",
+    "images:compress": "node scripts/compress-images.mjs",
+    "images:upload": "node scripts/upload-images.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
