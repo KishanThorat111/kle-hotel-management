@@ -1,12 +1,22 @@
 name = "kle-hotel-management"
 account_id = "6c3e32d5c70cfd7299332508a1f1bfad"
 compatibility_date = "2026-03-27"
+main = "src/worker.ts"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# R2 bucket binding — serves compressed WebP images at /cdn/*
+# R2 bucket binding — compressed WebP images
 [[r2_buckets]]
 binding = "KLE_ASSETS"
 bucket_name = "kle-assets"
+
+# D1 database — enquiry form submissions
+# IMPORTANT: Replace PASTE_DATABASE_ID_HERE with the actual ID from Cloudflare dashboard
+# Dashboard → D1 SQL database → kle-enquiries → copy the Database ID
+[[d1_databases]]
+binding = "DB"
+database_name = "kle-enquiries"
+database_id = "PASTE_DATABASE_ID_HERE"
