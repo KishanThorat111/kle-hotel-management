@@ -19,4 +19,4 @@ bucket_name = "kle-assets"
 [[d1_databases]]
 binding = "DB"
 database_name = "kle-enquiries"
-database_id = "PASTE_DATABASE_ID_HERE"
+database_id = "f2215c65-830b-4ecc-8106-247739e2b011"
