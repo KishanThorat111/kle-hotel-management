@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   LogOut, Download, Search, Trash2, Phone, User,
-  RefreshCw, MessageCircle, TrendingUp, Calendar, Users, Inbox,
+  RefreshCw, MessageCircle, TrendingUp, Calendar, Users, Inbox, X,
 } from 'lucide-react';
-
-const WA = '916364504056';
 
 interface Enquiry {
   id: number;
@@ -142,7 +140,7 @@ function StatCard({ icon: Icon, label, value, gold }: { icon: React.ElementType;
 export default function Admin() {
   const [pin, setPin]             = useState('');
   const [authed, setAuthed]       = useState(false);
-  const [loginErr, setLoginErr]   = useState('');
+  const [_loginErr, setLoginErr]  = useState('');
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [stats, setStats]         = useState<Stats | null>(null);
   const [total, setTotal]         = useState(0);

@@ -145,7 +145,7 @@ export default function EnquiryPopup() {
 
               {/* Interest selector */}
               <div className="grid grid-cols-3 gap-2 mb-5">
-                {INTERESTS.map(({ id, icon: Icon, label, desc }) => (
+                {INTERESTS.map(({ id, icon: Icon, label }) => (
                   <button
                     key={id}
                     onClick={() => setInterest(id)}

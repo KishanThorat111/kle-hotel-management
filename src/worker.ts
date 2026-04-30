@@ -11,9 +11,18 @@
  */
 
 export interface Env {
-  ASSETS: Fetcher;
-  DB: D1Database;
-  ADMIN_PIN: string; // set via: npx wrangler secret put ADMIN_PIN
+  ASSETS: { fetch(req: Request): Promise<Response> };
+  DB: {
+    exec(sql: string): Promise<unknown>;
+    prepare(sql: string): {
+      bind(...values: unknown[]): {
+        run(): Promise<unknown>;
+        all(): Promise<{ results: Record<string, unknown>[] }>;
+      };
+      first<T>(): Promise<T | null>;
+    };
+  };
+  ADMIN_PIN: string;
 }
 
 const CORS = {
@@ -104,7 +113,7 @@ export default {
           const limit = 50;
           const offset = (page - 1) * limit;
 
-          const { results } = await env.DB.prepare(
+          const { results: rows } = await env.DB.prepare(
             `SELECT * FROM enquiries ORDER BY created_at DESC LIMIT ? OFFSET ?`
           ).bind(limit, offset).all();
 
@@ -112,7 +121,7 @@ export default {
             `SELECT COUNT(*) as total FROM enquiries`
           ).all();
 
-          return json({ ok: true, data: results, total: (countResult[0] as { total: number }).total, page });
+          return json({ ok: true, data: rows, total: (countResult[0] as { total: number }).total, page });
         }
 
         // GET /api/stats
