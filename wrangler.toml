@@ -3,6 +3,12 @@ account_id = "6c3e32d5c70cfd7299332508a1f1bfad"
 compatibility_date = "2026-03-27"
 main = "src/worker.ts"
 
+# Custom domain — production URL
+[env.production]
+routes = [
+  { pattern = "kle-hotel-management.kodspot.co.in", custom_domain = true }
+]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
