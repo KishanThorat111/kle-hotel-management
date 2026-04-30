@@ -1135,7 +1135,7 @@ function ContactEditor({ token, addToast }: {
           <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
             <button onClick={() => setData({ ...data, admission_open: !data.admission_open })}
               className="relative w-10 h-6 rounded-full transition-colors"
-              style={{ background: data.admission_open ? '#25D366' : 'rgba(255,255,255,0.15)' }}>
+              style={{ background: data.admission_open ? '#25D366' : `color-mix(in srgb, ${G.text} 22%, transparent)` }}>
               <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
                 style={{ left: data.admission_open ? '1.25rem' : '0.125rem' }} />
             </button>
