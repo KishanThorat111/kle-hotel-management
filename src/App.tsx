@@ -6,6 +6,7 @@ import './App.css';
 import { useLenis } from './hooks/useLenis';
 import { ContentProvider } from './contexts/ContentContext';
 
+import CustomCursor from './components/CustomCursor';
 import EnquiryPopup from './components/EnquiryPopup';
 import LoadingScreen from './components/LoadingScreen';
 import Navigation from './components/Navigation';
@@ -37,6 +38,7 @@ function App() {
   return (
     <ContentProvider>
     <div ref={mainRef} className="relative min-h-screen overflow-x-hidden" style={{ background: '#FFFFFF' }}>
+      <CustomCursor />
       <LoadingScreen />
       <EnquiryPopup />
       <ScrollProgress />
