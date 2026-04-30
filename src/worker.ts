@@ -212,6 +212,16 @@ async function ensureDB(env: Env): Promise<void> {
         updated_at TEXT DEFAULT (datetime('now'))
       )`,
     ).run(),
+    env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS visitor_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_type TEXT NOT NULL,
+        session_id TEXT DEFAULT '',
+        ip TEXT DEFAULT '',
+        metadata TEXT DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ).run(),
   ]);
   dbReady = true;
 }
@@ -418,6 +428,53 @@ export default {
           if (id <= 0) return json({ ok: false, error: 'Invalid id' }, 400, origin);
           await env.DB.prepare(`DELETE FROM enquiries WHERE id = ?`).bind(id).run();
           return json({ ok: true }, 200, origin);
+        }
+
+        // POST /api/track — client-side event tracking (public, lightweight)
+        if (request.method === 'POST' && url.pathname === '/api/track') {
+          const ip  = request.headers.get('CF-Connecting-IP') ?? '';
+          const sid = (request.headers.get('X-Session-Id') ?? '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+          const ALLOWED_EVENTS = ['page_view','popup_open','apply_click','wa_click','form_submit','popup_close'];
+          let body: { event?: string; meta?: Record<string, string> } = {};
+          try { body = await request.json() as typeof body; } catch { /* ignore */ }
+          const evt = ALLOWED_EVENTS.includes(body.event ?? '') ? body.event! : 'unknown';
+          const meta = JSON.stringify(body.meta ?? {}).slice(0, 256);
+          try {
+            await env.DB.prepare(
+              `INSERT INTO visitor_events (event_type, session_id, ip, metadata) VALUES (?, ?, ?, ?)`,
+            ).bind(evt, sid, ip.slice(0, 45), meta).run();
+          } catch { /* non-critical */ }
+          return json({ ok: true }, 200, origin);
+        }
+
+        // GET /api/analytics — visitor analytics (admin)
+        if (request.method === 'GET' && url.pathname === '/api/analytics') {
+          if (!await isAuthorized(env, request)) return json({ ok: false, error: 'Unauthorized' }, 401, origin);
+          const [totalRow, todayRow, weekRow, byEventRes, dailyRes] = await Promise.all([
+            env.DB.prepare(
+              `SELECT COUNT(DISTINCT session_id) as total FROM visitor_events WHERE event_type = 'page_view'`,
+            ).first<{ total: number }>(),
+            env.DB.prepare(
+              `SELECT COUNT(DISTINCT session_id) as today FROM visitor_events WHERE event_type = 'page_view' AND date(created_at) = date('now')`,
+            ).first<{ today: number }>(),
+            env.DB.prepare(
+              `SELECT COUNT(DISTINCT session_id) as week FROM visitor_events WHERE event_type = 'page_view' AND date(created_at) >= date('now', '-7 days')`,
+            ).first<{ week: number }>(),
+            env.DB.prepare(
+              `SELECT event_type, COUNT(*) as cnt FROM visitor_events GROUP BY event_type ORDER BY cnt DESC`,
+            ).all(),
+            env.DB.prepare(
+              `SELECT date(created_at) as day, COUNT(*) as cnt FROM visitor_events WHERE event_type = 'page_view' AND date(created_at) >= date('now', '-14 days') GROUP BY day ORDER BY day ASC`,
+            ).all(),
+          ]);
+          return json({
+            ok: true,
+            total: totalRow?.total ?? 0,
+            today: todayRow?.today ?? 0,
+            week:  weekRow?.week  ?? 0,
+            by_event: byEventRes.results,
+            daily:    dailyRes.results,
+          }, 200, origin);
         }
 
         return json({ ok: false, error: 'Not found' }, 404, origin);

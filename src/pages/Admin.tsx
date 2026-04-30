@@ -5,13 +5,13 @@ import {
   LogOut, Download, Search, Trash2, Phone, User,
   RefreshCw, MessageCircle, TrendingUp, Calendar, Users, Inbox, X,
   LayoutDashboard, Edit3, Image, Shield, Globe, Check,
-  Upload, Copy, AlertTriangle, Eye, EyeOff, ChevronDown,
+  Upload, Copy, AlertTriangle, Eye, EyeOff, ChevronDown, BarChart2, MousePointer, Activity,
 } from 'lucide-react';
 import { DEFAULT_CONTENT } from '@/lib/siteContent';
 import type { HeroContent, AboutContent, ProgramItem, ContactContent } from '@/lib/siteContent';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab            = 'dashboard' | 'enquiries' | 'content' | 'media' | 'security';
+type Tab            = 'dashboard' | 'enquiries' | 'content' | 'media' | 'security' | 'analytics';
 type ContentSection = 'hero' | 'about' | 'programs' | 'contact';
 type SaveStatus     = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -25,6 +25,11 @@ interface Stats {
 }
 interface R2Image { key: string; size: number; uploaded: string; url: string; }
 interface ToastItem { id: string; type: 'success' | 'error' | 'info'; msg: string; }
+interface Analytics {
+  total: number; today: number; week: number;
+  by_event: { event_type: string; cnt: number }[];
+  daily: { day: string; cnt: number }[];
+}
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function getStoredToken(): string {
@@ -368,11 +373,12 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const NAV_ITEMS: { id: Tab; icon: LucideIcon; label: string; sub: string }[] = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',  sub: 'Overview'     },
-  { id: 'enquiries', icon: Inbox,           label: 'Enquiries',  sub: 'Messages'     },
-  { id: 'content',   icon: Edit3,           label: 'Content',    sub: 'Edit Website' },
-  { id: 'media',     icon: Image,           label: 'Media',      sub: 'Images & R2'  },
-  { id: 'security',  icon: Shield,          label: 'Security',   sub: 'Auth & PIN'   },
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',  sub: 'Overview'      },
+  { id: 'enquiries', icon: Inbox,           label: 'Enquiries',  sub: 'Messages'      },
+  { id: 'analytics', icon: BarChart2,       label: 'Analytics',  sub: 'Visitor Stats' },
+  { id: 'content',   icon: Edit3,           label: 'Content',    sub: 'Edit Website'  },
+  { id: 'media',     icon: Image,           label: 'Media',      sub: 'Images & R2'   },
+  { id: 'security',  icon: Shield,          label: 'Security',   sub: 'Auth & PIN'    },
 ];
 
 function Sidebar({ active, onTab, onLogout, enquiryCount }: {
@@ -1208,6 +1214,154 @@ function SecurityTab({ token, onLogout, addToast }: {
   );
 }
 
+// ─── Analytics Tab ────────────────────────────────────────────────────────────
+function AnalyticsTab({ token, addToast }: {
+  token: string; addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const [data, setData]       = useState<Analytics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/analytics', { headers: { 'Authorization': `Bearer ${token}` } });
+      const d = await res.json() as Analytics & { ok: boolean };
+      if (d.ok) setData(d);
+      else addToast('Failed to load analytics', 'error');
+    } catch { addToast('Network error', 'error'); }
+    finally { setLoading(false); }
+  }, [token, addToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const EVENT_LABELS: Record<string, string> = {
+    page_view: 'Page Views', apply_click: 'Apply Clicks',
+    popup_open: 'Popup Opens', form_submit: 'Form Submits',
+    wa_click: 'WhatsApp Clicks', popup_close: 'Popup Closed',
+  };
+  const EVENT_COLORS: Record<string, string> = {
+    page_view: '#C9A84C', apply_click: '#60a5fa', popup_open: '#a78bfa',
+    form_submit: '#34d399', wa_click: '#25D366', popup_close: 'rgba(255,255,255,0.3)',
+  };
+
+  // Conversion funnel
+  const views   = data?.by_event.find(e => e.event_type === 'page_view')?.cnt ?? 0;
+  const popups  = data?.by_event.find(e => e.event_type === 'popup_open')?.cnt ?? 0;
+  const submits = data?.by_event.find(e => e.event_type === 'form_submit')?.cnt ?? 0;
+  const waCl    = data?.by_event.find(e => e.event_type === 'wa_click')?.cnt ?? 0;
+  const pct = (n: number, d: number) => d > 0 ? `${Math.round((n / d) * 100)}%` : '—';
+
+  // Chart max for daily bars
+  const maxCnt = Math.max(...(data?.daily.map(d => d.cnt) ?? [1]), 1);
+
+  return (
+    <div className="p-6 md:p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>
+            Visitor Analytics
+          </h2>
+          <p className="text-xs" style={{ color: G.textMuted }}>Real-time data · Cloudflare D1</p>
+        </div>
+        <button onClick={load}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
+          style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.textDim }}>
+          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />Refresh
+        </button>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard icon={Users}      label="Total Unique Visitors" value={data?.total ?? '—'} gold />
+        <StatCard icon={Calendar}   label="Visitors Today"        value={data?.today ?? '—'} />
+        <StatCard icon={TrendingUp} label="This Week"             value={data?.week ?? '—'} />
+        <StatCard icon={Activity}   label="Apply Clicks"          value={data?.by_event.find(e => e.event_type === 'apply_click')?.cnt ?? 0} />
+      </div>
+
+      {/* Conversion funnel */}
+      <div className="rounded-xl p-5 mb-8" style={{ background: G.card, border: `1px solid ${G.borderGold}` }}>
+        <p className="text-xs font-medium mb-5" style={{ color: G.goldDim }}>CONVERSION FUNNEL</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: 'Page Views',     value: views,   color: '#C9A84C', pctOf: null },
+            { label: 'Popup Opens',    value: popups,  color: '#a78bfa', pctOf: views },
+            { label: 'Form Submits',   value: submits, color: '#34d399', pctOf: popups },
+            { label: 'WhatsApp Clicks',value: waCl,    color: '#25D366', pctOf: views },
+          ].map(f => (
+            <div key={f.label} className="text-center p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+              <p className="text-3xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: f.color }}>{f.value}</p>
+              <p className="text-[11px] font-medium mb-1" style={{ color: G.textDim }}>{f.label}</p>
+              {f.pctOf !== null && (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${f.color}22`, color: f.color }}>
+                  {pct(f.value, f.pctOf)} conv.
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 14-day daily chart */}
+      <div className="rounded-xl p-5 mb-8" style={{ background: G.card, border: `1px solid ${G.border}` }}>
+        <p className="text-xs font-medium mb-5" style={{ color: G.goldDim }}>PAGE VIEWS — LAST 14 DAYS</p>
+        {data?.daily && data.daily.length > 0 ? (
+          <div className="flex items-end gap-2 h-32">
+            {data.daily.map(d => (
+              <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
+                <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: G.gold }}>
+                  {d.cnt}
+                </span>
+                <div
+                  className="w-full rounded-t transition-all"
+                  style={{
+                    height: `${Math.max((d.cnt / maxCnt) * 100, 4)}%`,
+                    background: `linear-gradient(180deg, #C9A84C, rgba(201,168,76,0.3))`,
+                    minHeight: 4,
+                  }}
+                />
+                <span className="text-[9px] rotate-45 origin-left" style={{ color: G.textMuted }}>
+                  {d.day.slice(5)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-sm" style={{ color: G.textMuted }}>
+            {loading ? 'Loading…' : 'No data yet. Visitors will appear here after page loads.'}
+          </p>
+        )}
+      </div>
+
+      {/* Event breakdown table */}
+      <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${G.border}` }}>
+        <div className="px-5 py-3" style={{ background: G.cardAlt, borderBottom: `1px solid ${G.border}` }}>
+          <span className="text-xs tracking-widest uppercase" style={{ color: G.goldDim }}>Event Breakdown</span>
+        </div>
+        {data?.by_event.map((e, i) => (
+          <div key={e.event_type} className="flex items-center justify-between px-5 py-3"
+            style={{ background: i % 2 === 0 ? G.card : 'rgba(255,255,255,0.01)', borderBottom: `1px solid ${G.border}` }}>
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: EVENT_COLORS[e.event_type] ?? G.textMuted }} />
+              <div className="flex items-center gap-2">
+                <MousePointer size={12} style={{ color: G.textMuted }} />
+                <span className="text-sm" style={{ color: G.text }}>{EVENT_LABELS[e.event_type] ?? e.event_type}</span>
+              </div>
+            </div>
+            <span className="text-xl font-light" style={{ fontFamily: 'Cormorant Garamond, serif', color: EVENT_COLORS[e.event_type] ?? G.text }}>
+              {e.cnt}
+            </span>
+          </div>
+        ))}
+        {(!data?.by_event || data.by_event.length === 0) && (
+          <p className="text-center py-8 text-sm" style={{ color: G.textMuted, background: G.card }}>
+            {loading ? 'Loading…' : 'No events tracked yet.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const [token, setToken]           = useState(getStoredToken);
@@ -1333,6 +1487,9 @@ export default function Admin() {
             onSearch={setSearch} onDelete={handleDelete}
             onRefresh={() => loadEnquiries(page)} onPage={loadEnquiries}
           />
+        )}
+        {activeTab === 'analytics' && (
+          <AnalyticsTab token={token} addToast={addToast} />
         )}
         {activeTab === 'content' && (
           <ContentTab token={token} images={images} onRefreshImages={loadImages} addToast={addToast} />

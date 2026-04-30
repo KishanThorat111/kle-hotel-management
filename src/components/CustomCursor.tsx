@@ -2,27 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * CustomCursor — luxury gold cursor for desktop/laptop (fine pointer) devices.
- * Uses plain CSS transitions instead of GSAP to avoid transform conflicts.
- * Hidden on touch/mobile devices; native cursor restored there via App.css.
+ * States: default, hover (enlarge), click (compress), typing (thin beam).
  */
 export default function CustomCursor() {
-  // Initialise off-screen so the ring doesn't flash at (0,0) before first move
-  const [pos, setPos] = useState({ x: -200, y: -200 });
-  const [dotPos, setDotPos] = useState({ x: -200, y: -200 });
+  const [pos, setPos]           = useState({ x: -200, y: -200 });
+  const [dotPos, setDotPos]     = useState({ x: -200, y: -200 });
   const [isHovering, setIsHovering] = useState(false);
-  const [isPointer, setIsPointer] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isPointer, setIsPointer]   = useState(false);
+  const [isVisible, setIsVisible]   = useState(false);
+  const [isClicking, setIsClicking] = useState(false);
+  const [isTyping, setIsTyping]     = useState(false);
 
-  // Smooth ring follows mouse with lerp via rAF
   const ringTarget = useRef({ x: -200, y: -200 });
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    // Only activate on fine-pointer (mouse/trackpad) devices
     if (window.matchMedia('(pointer: coarse)').matches) return;
 
     let current = { x: -200, y: -200 };
-
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const animate = () => {
@@ -38,68 +35,92 @@ export default function CustomCursor() {
       setDotPos({ x: e.clientX, y: e.clientY });
       setIsVisible(true);
     };
-
-    const onLeave = () => setIsVisible(false);
-    const onEnter = () => setIsVisible(true);
+    const onLeave  = () => setIsVisible(false);
+    const onEnter  = () => setIsVisible(true);
+    const onDown   = () => setIsClicking(true);
+    const onUp     = () => setIsClicking(false);
 
     const onOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const hoverable = !!target.closest('a, button, [role="button"], input, textarea, select, [data-cursor="pointer"]');
+      const hoverable = !!target.closest(
+        'a, button, [role="button"], select, label, [data-cursor="pointer"]',
+      );
       setIsHovering(hoverable);
       setIsPointer(hoverable || window.getComputedStyle(target).cursor === 'pointer');
     };
 
-    document.addEventListener('mousemove', onMove, { passive: true });
-    document.addEventListener('mouseover', onOver, { passive: true });
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.matches('input, textarea, [contenteditable="true"], [contenteditable=""]'))
+        setIsTyping(true);
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.matches('input, textarea, [contenteditable="true"], [contenteditable=""]'))
+        setIsTyping(false);
+    };
+
+    document.addEventListener('mousemove',  onMove,     { passive: true });
+    document.addEventListener('mouseover',  onOver,     { passive: true });
     document.addEventListener('mouseleave', onLeave);
     document.addEventListener('mouseenter', onEnter);
+    document.addEventListener('mousedown',  onDown);
+    document.addEventListener('mouseup',    onUp);
+    document.addEventListener('focusin',    onFocusIn);
+    document.addEventListener('focusout',   onFocusOut);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseover', onOver);
+      document.removeEventListener('mousemove',  onMove);
+      document.removeEventListener('mouseover',  onOver);
       document.removeEventListener('mouseleave', onLeave);
       document.removeEventListener('mouseenter', onEnter);
+      document.removeEventListener('mousedown',  onDown);
+      document.removeEventListener('mouseup',    onUp);
+      document.removeEventListener('focusin',    onFocusIn);
+      document.removeEventListener('focusout',   onFocusOut);
     };
   }, []);
 
-  // Don't render at all on touch devices (SSR-safe check)
   if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
     return null;
   }
 
+  // Typing mode → thin vertical bar; click → compressed ring; hover → expanded ring
+  const ringW  = isTyping ? 2  : isClicking ? 20 : isHovering ? 52 : 34;
+  const ringH  = isTyping ? 22 : isClicking ? 20 : isHovering ? 52 : 34;
+  const radius = isTyping ? '1px' : '50%';
+  const scale  = isClicking ? 'scale(0.8)' : 'scale(1)';
+
   return (
     <>
-      {/* Outer ring — lags smoothly behind the mouse */}
+      {/* Outer ring / beam */}
       <div
         aria-hidden="true"
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: isHovering ? 56 : 36,
-          height: isHovering ? 56 : 36,
-          borderRadius: '50%',
-          border: '1.5px solid rgba(201,168,76,0.85)',
-          backgroundColor: isHovering ? 'rgba(201,168,76,0.1)' : 'transparent',
-          transform: `translate(${pos.x - (isHovering ? 28 : 18)}px, ${pos.y - (isHovering ? 28 : 18)}px)`,
+          position: 'fixed', top: 0, left: 0,
+          width: ringW, height: ringH,
+          borderRadius: radius,
+          border: `${isTyping ? 1.5 : 1.5}px solid rgba(201,168,76,${isClicking ? 1 : 0.85})`,
+          backgroundColor: isClicking
+            ? 'rgba(201,168,76,0.18)'
+            : isHovering ? 'rgba(201,168,76,0.08)' : 'transparent',
+          transform: `translate(${pos.x - ringW / 2}px, ${pos.y - ringH / 2}px) ${scale}`,
           opacity: isVisible ? 1 : 0,
-          transition: 'opacity 0.2s, width 0.25s, height 0.25s, background-color 0.25s',
+          transition: 'opacity 0.2s, width 0.2s, height 0.2s, border-radius 0.2s, background-color 0.15s',
           pointerEvents: 'none',
           zIndex: 99999,
           willChange: 'transform',
         }}
       />
 
-      {/* Inner dot — snaps exactly to mouse position */}
+      {/* Inner dot — hidden when hovering clickable or typing */}
       <div
         aria-hidden="true"
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: isPointer ? 0 : 6,
-          height: isPointer ? 0 : 6,
+          position: 'fixed', top: 0, left: 0,
+          width: (isPointer || isTyping) ? 0 : 6,
+          height: (isPointer || isTyping) ? 0 : 6,
           borderRadius: '50%',
           backgroundColor: '#C9A84C',
           transform: `translate(${dotPos.x - 3}px, ${dotPos.y - 3}px)`,

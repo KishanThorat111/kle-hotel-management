@@ -5,6 +5,7 @@ import './App.css';
 
 import { useLenis } from './hooks/useLenis';
 import { ContentProvider } from './contexts/ContentContext';
+import { track } from './lib/track';
 
 import CustomCursor from './components/CustomCursor';
 import EnquiryPopup from './components/EnquiryPopup';
@@ -27,6 +28,11 @@ gsap.registerPlugin(ScrollTrigger);
 function App() {
   const mainRef = useRef<HTMLDivElement>(null);
   useLenis();
+
+  useEffect(() => {
+    // Track unique page view on first render
+    track('page_view');
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {

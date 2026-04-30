@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { Menu, X, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { track } from '@/lib/track';
 
 const navItems = [
   { label: 'About', href: '#about' },
@@ -39,8 +40,9 @@ export default function Navigation() {
     };
   }, []);
 
-  const scrollTo = (href: string) => {
-    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+  const openApplyForm = () => {
+    track('apply_click', { source: 'header' });
+    window.dispatchEvent(new CustomEvent('kle:open-popup', { detail: { source: 'apply_now' } }));
     setIsMobileMenuOpen(false);
   };
 
@@ -103,7 +105,9 @@ export default function Navigation() {
                 return (
                   <button
                     key={item.label}
-                    onClick={() => scrollTo(item.href)}
+                    onClick={() => {
+                      document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className="relative px-4 py-2 text-[11px] font-semibold tracking-widest uppercase transition-all duration-300"
                     style={{
                       color: isScrolled
@@ -135,7 +139,7 @@ export default function Navigation() {
                 +91 97315 95657
               </a>
               <button
-                onClick={() => scrollTo('#admission')}
+                onClick={openApplyForm}
                 className="px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase transition-all duration-300"
                 style={{
                   background: '#C9A84C',
@@ -205,7 +209,10 @@ export default function Navigation() {
                 {navItems.map((item, i) => (
                   <motion.button
                     key={item.label}
-                    onClick={() => scrollTo(item.href)}
+                    onClick={() => {
+                      document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+                      setIsMobileMenuOpen(false);
+                    }}
                     className="w-full text-left px-4 py-3.5 text-sm font-medium tracking-widest uppercase flex items-center justify-between group"
                     style={{ color: 'rgba(255,255,255,0.75)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                     initial={{ opacity: 0, x: 20 }}
@@ -223,7 +230,7 @@ export default function Navigation() {
               {/* CTA */}
               <div className="px-4 pb-8">
                 <button
-                  onClick={() => scrollTo('#admission')}
+                  onClick={openApplyForm}
                   className="w-full py-4 text-sm font-semibold tracking-widest uppercase text-center"
                   style={{ background: '#C9A84C', color: '#FFFFFF' }}
                 >

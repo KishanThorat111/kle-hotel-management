@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { X, Phone, User, ChevronRight, GraduationCap, HelpCircle, Info } from 'lucide-react';
+import { track } from '@/lib/track';
 
 const WA = '916364504056';
 const STORAGE_KEY = 'kle_enquiry_submitted';
@@ -60,6 +61,7 @@ export default function EnquiryPopup() {
   const [submitErr, setSubmitErr]  = useState('');
   const [loading, setLoading]     = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [source, setSource]       = useState('popup');
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dismiss = useCallback(() => {
@@ -76,15 +78,29 @@ export default function EnquiryPopup() {
     });
   }, []);
 
+  // Auto-show after 7s (if not already submitted)
   useEffect(() => {
-    // Don't show if already submitted this session
     if (sessionStorage.getItem(STORAGE_KEY)) return;
-
     const timer = setTimeout(() => {
+      setSource('popup');
       setVisible(true);
+      track('popup_open', { source: 'auto' });
     }, DELAY_MS);
-
     return () => clearTimeout(timer);
+  }, []);
+
+  // Listen for Apply Now event from Navigation
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ source?: string }>).detail ?? {};
+      const src = detail.source ?? 'apply_now';
+      setSource(src);
+      setStep('form');
+      setVisible(true);
+      track('popup_open', { source: src });
+    };
+    window.addEventListener('kle:open-popup', handler);
+    return () => window.removeEventListener('kle:open-popup', handler);
   }, []);
 
   useEffect(() => {
@@ -112,13 +128,14 @@ export default function EnquiryPopup() {
     setLoading(true);
     setSubmitErr('');
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const ok = await submitEnquiry({ name: name.trim(), phone: cleanPhone, interest, source: 'popup' });
+    const ok = await submitEnquiry({ name: name.trim(), phone: cleanPhone, interest, source });
     setLoading(false);
     if (!ok) {
       setSubmitErr('Something went wrong. Please try again or use WhatsApp below.');
       return;
     }
     sessionStorage.setItem(STORAGE_KEY, '1');
+    track('form_submit', { interest, source });
     setStep('done');
     setCountdown(3);
 
@@ -142,12 +159,14 @@ export default function EnquiryPopup() {
   };
 
   const openWaDirect = () => {
+    track('wa_click', { source: 'popup_direct' });
     window.open(`https://wa.me/${WA}?text=${WA_DIRECT_MSG}`, '_blank');
   };
 
   const openWaDone = () => {
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     const waMsg = buildWaMessage(name.trim(), cleanPhone, interest);
+    track('wa_click', { source: 'popup_done' });
     window.open(`https://wa.me/${WA}?text=${waMsg}`, '_blank');
     dismiss();
   };
@@ -187,10 +206,12 @@ export default function EnquiryPopup() {
                   KLE Hotel Management
                 </p>
                 <h2 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', color: '#FAF7F0' }}>
-                  How can we help you?
+                  {source === 'apply_now' ? 'Apply for Admission' : 'How can we help you?'}
                 </h2>
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif' }}>
-                  Fill in your details and we'll reach out within minutes.
+                  {source === 'apply_now'
+                    ? 'Fill your details and our admissions team will call you today.'
+                    : 'Fill in your details and we\'ll reach out within minutes.'}
                 </p>
               </div>
 
