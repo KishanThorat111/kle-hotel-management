@@ -6,7 +6,7 @@ import {
   RefreshCw, MessageCircle, TrendingUp, Calendar, Users, Inbox, X,
   LayoutDashboard, Edit3, Image, Shield, Globe, Check,
   Upload, Copy, AlertTriangle, Eye, EyeOff, ChevronDown, BarChart2, MousePointer, Activity,
-  Sun, Moon, ExternalLink, Info, Sparkles,
+  Sun, Moon, ExternalLink, Info, Sparkles, Menu,
 } from 'lucide-react';
 import { DEFAULT_CONTENT } from '@/lib/siteContent';
 import type { HeroContent, AboutContent, ProgramItem, ContactContent } from '@/lib/siteContent';
@@ -483,8 +483,8 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
 }
 
 // ─── Top Bar (theme toggle, view live, help) ──────────────────────────────────
-function TopBar({ theme, onTheme, tab }: {
-  theme: ThemeName; onTheme: (t: ThemeName) => void; tab: Tab;
+function TopBar({ theme, onTheme, tab, onMenu }: {
+  theme: ThemeName; onTheme: (t: ThemeName) => void; tab: Tab; onMenu: () => void;
 }) {
   const tabLabels: Record<Tab, string> = {
     dashboard: 'Dashboard', enquiries: 'Enquiries', analytics: 'Analytics',
@@ -496,19 +496,25 @@ function TopBar({ theme, onTheme, tab }: {
   };
   return (
     <header
-      className="sticky top-0 z-40 flex items-center justify-between gap-4 px-6 py-3"
+      className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 sm:px-6 py-3"
       style={{
         background: G.card,
         borderBottom: `1px solid ${G.border}`,
         backdropFilter: 'blur(8px)',
       }}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="text-xs tracking-widest uppercase" style={{ color: G.goldDim, fontFamily: 'Inter, sans-serif' }}>
+      <div className="flex items-center gap-2 min-w-0">
+        <button onClick={onMenu}
+          className="lg:hidden p-2 rounded-lg flex-shrink-0"
+          aria-label="Open menu"
+          style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }}>
+          <Menu size={16} />
+        </button>
+        <span className="text-xs tracking-widest uppercase truncate" style={{ color: G.goldDim, fontFamily: 'Inter, sans-serif' }}>
           {tabLabels[tab]}
         </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {/* Theme toggle */}
         <div className="flex items-center rounded-lg p-0.5"
           style={{ background: G.field, border: `1px solid ${G.border}` }}>
@@ -549,14 +555,25 @@ const NAV_ITEMS: { id: Tab; icon: LucideIcon; label: string; sub: string }[] = [
   { id: 'security',  icon: Shield,          label: 'Security',   sub: 'Auth & PIN'    },
 ];
 
-function Sidebar({ active, onTab, onLogout, enquiryCount }: {
+function Sidebar({ active, onTab, onLogout, enquiryCount, open, onClose }: {
   active: Tab; onTab: (t: Tab) => void; onLogout: () => void; enquiryCount: number;
+  open: boolean; onClose: () => void;
 }) {
+  const handlePick = (t: Tab) => { onTab(t); onClose(); };
   return (
-    <aside className="flex-shrink-0 w-60 flex flex-col"
-      style={{ background: G.bg, borderRight: `1px solid ${G.border}`, minHeight: '100vh', position: 'sticky', top: 0 }}>
+    <>
+      {/* Backdrop on mobile when drawer open */}
+      {open && (
+        <div onClick={onClose}
+          className="lg:hidden fixed inset-0 z-40"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+        />
+      )}
+      <aside
+        className={`flex-shrink-0 w-60 flex flex-col fixed lg:sticky inset-y-0 left-0 z-50 lg:z-auto transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        style={{ background: G.bg, borderRight: `1px solid ${G.border}`, minHeight: '100vh', top: 0 }}>
       {/* Brand */}
-      <div className="p-5 border-b" style={{ borderColor: G.border }}>
+      <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: G.border }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: G.goldFillStrong, border: `1px solid ${G.borderGold}` }}>
@@ -567,11 +584,15 @@ function Sidebar({ active, onTab, onLogout, enquiryCount }: {
             <p className="text-[10px]" style={{ color: G.textMuted }}>Hotel Management</p>
           </div>
         </div>
+        <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg" aria-label="Close menu"
+          style={{ color: G.textMuted }}>
+          <X size={14} />
+        </button>
       </div>
       {/* Nav items */}
       <nav className="flex-1 py-4 px-3 flex flex-col gap-1">
         {NAV_ITEMS.map(n => (
-          <button key={n.id} onClick={() => onTab(n.id)}
+          <button key={n.id} onClick={() => handlePick(n.id)}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all relative"
             style={{
               background: active === n.id ? G.goldFill : 'transparent',
@@ -602,7 +623,8 @@ function Sidebar({ active, onTab, onLogout, enquiryCount }: {
           <LogOut size={14} /><span className="text-xs">Sign Out</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -620,7 +642,7 @@ function DashboardTab({ total, stats, recentEnquiries }: {
     try { localStorage.setItem('kle_admin_seen_help', '1'); } catch { /* ignore */ }
   };
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="mb-8">
         <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Dashboard</h2>
         <p className="text-xs" style={{ color: G.textMuted }}>Session active \u00b7 Expires in ~{expiresIn}h</p>
@@ -667,8 +689,9 @@ function DashboardTab({ total, stats, recentEnquiries }: {
         <div className="px-5 py-3" style={{ background: G.cardAlt, borderBottom: `1px solid ${G.border}` }}>
           <span className="text-xs tracking-widest uppercase" style={{ color: G.goldDim }}>Recent Enquiries</span>
         </div>
+        <div className="overflow-x-auto">
         {recentEnquiries.slice(0, 5).map((e, i) => (
-          <div key={e.id} className="grid grid-cols-[2fr_1fr_1fr] gap-4 px-5 py-3 items-center"
+          <div key={e.id} className="grid grid-cols-[2fr_1fr_1fr] gap-4 px-5 py-3 items-center min-w-[480px]"
             style={{ background: i % 2 === 0 ? G.card : G.rowAlt, borderBottom: `1px solid ${G.border}` }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
@@ -687,6 +710,7 @@ function DashboardTab({ total, stats, recentEnquiries }: {
         {recentEnquiries.length === 0 && (
           <p className="text-center py-8 text-sm" style={{ color: G.textMuted, background: G.card }}>No enquiries yet.</p>
         )}
+        </div>
       </div>
     </div>
   );
@@ -708,8 +732,8 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
     : enquiries;
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Enquiries</h2>
           <p className="text-xs" style={{ color: G.textMuted }}>{total} total · {stats?.today ?? 0} today</p>
@@ -731,11 +755,12 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
         <Search size={14} style={{ color: G.textMuted }} />
         <input type="text" placeholder="Search name, phone, interest…" value={search}
           onChange={e => onSearch(e.target.value)}
-          className="flex-1 bg-transparent outline-none text-sm" style={{ color: G.text }} />
+          className="flex-1 bg-transparent outline-none text-sm min-w-0" style={{ color: G.text }} />
         {search && <button onClick={() => onSearch('')} style={{ color: G.textMuted }}><X size={14} /></button>}
       </div>
       <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${G.border}` }}>
-        <div className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] gap-4 px-5 py-3"
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] gap-4 px-5 py-3 min-w-[720px]"
           style={{ background: G.cardAlt, borderBottom: `1px solid ${G.border}` }}>
           {['Name', 'Phone', 'Interest', 'Date', 'Actions'].map(h => (
             <span key={h} className="text-[10px] tracking-widest uppercase" style={{ color: G.goldDim }}>{h}</span>
@@ -746,7 +771,7 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
           : filtered.length === 0
           ? <div className="py-16 text-center text-sm" style={{ color: G.textMuted, background: G.card }}>No enquiries found.</div>
           : filtered.map((e, i) => (
-            <div key={e.id} className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] gap-4 px-5 py-4 items-center"
+            <div key={e.id} className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] gap-4 px-5 py-4 items-center min-w-[720px]"
               style={{ background: i % 2 === 0 ? G.card : G.rowAlt, borderBottom: `1px solid ${G.border}` }}>
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
@@ -776,6 +801,7 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
             </div>
           ))
         }
+        </div>
       </div>
       {total > 50 && (
         <div className="flex items-center justify-between mt-4">
@@ -840,8 +866,8 @@ function HeroEditor({ token, images, onRefreshImages, addToast }: {
   };
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-3">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Hero Section</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
@@ -933,8 +959,8 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
   };
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-3">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>About Section</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
@@ -1024,8 +1050,8 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
   };
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-3">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Programs</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
@@ -1046,7 +1072,7 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
               <ChevronDown size={14} style={{ color: G.textMuted, transform: open === i ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
             </button>
             {open === i && (
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-t" style={{ borderColor: G.border, background: '#080f22' }}>
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-t" style={{ borderColor: G.border, background: G.cardAlt }}>
                 <Field label="Title"><TInput value={prog.title}    onChange={v => upd(i, 'title', v)} /></Field>
                 <Field label="Subtitle / Dept"><TInput value={prog.subtitle} onChange={v => upd(i, 'subtitle', v)} /></Field>
                 <Field label="Duration"><TInput value={prog.duration}  onChange={v => upd(i, 'duration', v)} placeholder="3 Years" /></Field>
@@ -1106,8 +1132,8 @@ function ContactEditor({ token, addToast }: {
   };
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-3">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Contact & Settings</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
@@ -1166,10 +1192,10 @@ function ContentTab({ token, images, onRefreshImages, addToast }: {
   ];
   return (
     <div>
-      <div className="border-b px-6 flex gap-1" style={{ borderColor: G.border, background: G.cardAlt }}>
+      <div className="border-b px-4 sm:px-6 flex gap-1 overflow-x-auto" style={{ borderColor: G.border, background: G.cardAlt }}>
         {sections.map(s => (
           <button key={s.id} onClick={() => setSection(s.id)}
-            className="px-4 py-3 text-xs font-medium transition-all relative"
+            className="px-4 py-3 text-xs font-medium transition-all relative flex-shrink-0"
             style={{ color: section === s.id ? G.gold : G.textMuted }}>
             {s.label}
             {section === s.id && <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: G.gold }} />}
@@ -1229,7 +1255,7 @@ function MediaTab({ token, images, loading, onRefresh, addToast }: {
   };
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Media Library</h2>
@@ -1457,8 +1483,8 @@ function AnalyticsTab({ token, addToast }: {
   const maxCnt = Math.max(...(data?.daily.map(d => d.cnt) ?? [1]), 1);
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
           <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>
             Visitor Analytics
@@ -1466,7 +1492,7 @@ function AnalyticsTab({ token, addToast }: {
           <p className="text-xs" style={{ color: G.textMuted }}>Real-time data · Cloudflare D1</p>
         </div>
         <button onClick={load}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs self-start sm:self-auto"
           style={{ background: G.field, border: `1px solid ${G.border}`, color: G.textDim }}>
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />Refresh
         </button>
@@ -1580,6 +1606,7 @@ export default function Admin() {
   const [images, setImages]         = useState<R2Image[]>([]);
   const [loadingImg, setLoadingImg] = useState(false);
   const [theme, setTheme]           = useState<ThemeName>(getStoredTheme);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const tokenRef                    = useRef(token);
 
   const handleTheme = useCallback((t: ThemeName) => {
@@ -1688,9 +1715,10 @@ export default function Admin() {
     <div className="flex min-h-screen"
       style={{ ...(THEMES[theme] as CSSProperties), background: G.bg, fontFamily: 'Inter, sans-serif', color: G.text }}>
       <Toasts items={toasts} />
-      <Sidebar active={activeTab} onTab={setActiveTab} onLogout={handleLogout} enquiryCount={total} />
-      <main className="flex-1 overflow-auto flex flex-col">
-        <TopBar theme={theme} onTheme={handleTheme} tab={activeTab} />
+      <Sidebar active={activeTab} onTab={setActiveTab} onLogout={handleLogout} enquiryCount={total}
+        open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="flex-1 overflow-auto flex flex-col min-w-0">
+        <TopBar theme={theme} onTheme={handleTheme} tab={activeTab} onMenu={() => setSidebarOpen(true)} />
         {activeTab === 'dashboard' && (
           <DashboardTab total={total} stats={stats} recentEnquiries={enquiries} />
         )}
