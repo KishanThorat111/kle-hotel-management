@@ -3,35 +3,14 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { GraduationCap, Building2, Globe2 } from 'lucide-react';
-import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const stats = [
-  { value: '25+', label: 'Years of Excellence' },
-  { value: '5000+', label: 'Successful Alumni' },
-  { value: '100%', label: 'Placement Support' },
-];
-
-const pillars = [
-  {
-    icon: GraduationCap,
-    title: 'Academic Excellence',
-    desc: 'NEP-aligned curriculum, industry faculty, and hands-on practical training in fully equipped labs.',
-  },
-  {
-    icon: Globe2,
-    title: 'Global Exposure',
-    desc: 'International internship opportunities, cultural exchange, and placements with 5-star brands worldwide.',
-  },
-  {
-    icon: Building2,
-    title: 'Industry Integration',
-    desc: 'Partnerships with Taj, Marriott, ITC, Oberoi, Hyatt and 50+ leading hospitality companies.',
-  },
-];
+const PILLAR_ICONS = [GraduationCap, Globe2, Building2];
 
 export default function About() {
+  const content = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +48,7 @@ export default function About() {
           <div className="about-reveal opacity-0 relative">
             <div className="relative overflow-hidden" style={{ aspectRatio: '4/5', maxHeight: '560px' }}>
               <img
-                src={img('team')}
+                src={content.about.image}
                 alt="KLE Faculty and Students"
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'left 25%' }}
@@ -108,7 +87,7 @@ export default function About() {
               We provide world-class hospitality education through an industry-integrated curriculum, expert faculty with leading hotel experience, and 100% placement assistance to every student.
             </p>
             <div className="about-reveal opacity-0 flex flex-wrap gap-8 mt-10">
-              {stats.map((s, i) => (
+              {content.about.stats.map((s, i) => (
                 <div key={i} style={{ borderLeft: '2px solid #C9A84C', paddingLeft: '1rem' }}>
                   <p className="text-3xl font-semibold" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', color: '#C9A84C' }}>{s.value}</p>
                   <p className="text-xs tracking-widest uppercase mt-0.5" style={{ color: '#9CA3AF' }}>{s.label}</p>
@@ -122,8 +101,8 @@ export default function About() {
         </div>
 
         <div className="pillars-row grid grid-cols-1 md:grid-cols-3 gap-6">
-          {pillars.map((p, i) => {
-            const Icon = p.icon;
+          {content.about.pillars.map((p, i) => {
+            const Icon = PILLAR_ICONS[i] ?? GraduationCap;
             return (
               <motion.div key={i} className="pillar-item opacity-0 p-8 card-edu" whileHover={{ y: -4 }} transition={{ duration: 0.3 }}>
                 <div className="w-11 h-11 flex items-center justify-center mb-5" style={{ background: '#FBF4E3', color: '#C9A84C' }}>

@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './App.css';
 
 import { useLenis } from './hooks/useLenis';
+import { ContentProvider } from './contexts/ContentContext';
 
 import EnquiryPopup from './components/EnquiryPopup';
 import LoadingScreen from './components/LoadingScreen';
@@ -34,6 +35,7 @@ function App() {
   }, []);
 
   return (
+    <ContentProvider>
     <div ref={mainRef} className="relative min-h-screen overflow-x-hidden" style={{ background: '#FFFFFF' }}>
       <LoadingScreen />
       <EnquiryPopup />
@@ -107,6 +109,7 @@ function App() {
         </div>
       </footer>
     </div>
+    </ContentProvider>
   );
 }
 

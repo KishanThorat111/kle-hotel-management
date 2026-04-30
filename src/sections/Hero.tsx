@@ -4,18 +4,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown, MapPin, Award } from 'lucide-react';
 import AnimatedCounter from '@/components/AnimatedCounter';
-import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const heroStats = [
-  { value: 25, suffix: '+', label: 'Years of Excellence' },
-  { value: 5000, suffix: '+', label: 'Alumni Worldwide' },
-  { value: 100, suffix: '%', label: 'Placement Support' },
-  { value: 50, suffix: '+', label: 'Industry Partners' },
-];
-
 export default function Hero() {
+  const content = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -54,7 +48,7 @@ export default function Hero() {
       {/* Background */}
       <div ref={bgRef} className="absolute inset-0 w-full h-[115%] -top-[7.5%]">
         <img
-          src={img('campus')}
+          src={content.hero.bg_image}
           alt="KLE Campus"
           className="w-full h-full object-cover"
           style={{ objectPosition: 'left center' }}
@@ -102,9 +96,7 @@ export default function Hero() {
               color: '#FFFFFF',
             }}
           >
-            Your Place in the{' '}
-            <br className="hidden md:block" />
-            <em style={{ color: '#C9A84C', fontStyle: 'italic' }}>World of Hospitality</em>
+            {content.hero.heading}
           </h1>
 
           {/* Divider */}
@@ -118,7 +110,7 @@ export default function Hero() {
             className="hero-sub opacity-0 max-w-xl text-base md:text-lg font-light leading-relaxed"
             style={{ color: 'rgba(255,255,255,0.68)' }}
           >
-            KLE Graduate School of Hotel Management and Catering Technology, Belagavi — empowering students to lead the global hospitality industry since 1997.
+            {content.hero.subtitle}
           </p>
 
           {/* CTAs */}
@@ -129,7 +121,7 @@ export default function Hero() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Apply Now <ArrowRight className="w-4 h-4" />
+              {content.hero.cta_primary} <ArrowRight className="w-4 h-4" />
             </motion.button>
             <motion.button
               onClick={() => document.querySelector('#programs')?.scrollIntoView({ behavior: 'smooth' })}
@@ -137,7 +129,7 @@ export default function Hero() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Explore Programs
+              {content.hero.cta_secondary}
             </motion.button>
           </div>
 
@@ -147,7 +139,7 @@ export default function Hero() {
             style={{ color: 'rgba(255,255,255,0.4)' }}
           >
             <Award className="w-4 h-4" style={{ color: '#C9A84C' }} />
-            <span className="text-xs tracking-wide">AICTE Approved · Affiliated to KLE University</span>
+            <span className="text-xs tracking-wide">{content.hero.accreditation}</span>
           </div>
         </div>
       </div>
@@ -163,7 +155,7 @@ export default function Hero() {
       >
         <div className="max-w-7xl mx-auto px-5 md:px-10">
           <div className="grid grid-cols-2 md:grid-cols-4">
-            {heroStats.map((stat, i) => (
+            {content.hero.stats.map((stat, i) => (
               <div
                 key={i}
                 className="hero-stat opacity-0 py-5 px-6 flex flex-col gap-1"

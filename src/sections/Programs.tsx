@@ -3,46 +3,12 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { Clock, ChevronRight } from 'lucide-react';
-import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const programs = [
-  {
-    image: img('chef-students'),
-    title: 'Culinary Operations',
-    subtitle: 'Food Production & Patisserie',
-    duration: '3 Years',
-    desc: 'Master classical and modern culinary techniques. Bread & pastry, garde manger, live kitchens with professional-grade equipment.',
-    tags: ['Food Production', 'Bakery & Confectionery', 'Nutrition'],
-  },
-  {
-    image: img('fb-service'),
-    title: 'Food & Beverage Service',
-    subtitle: 'Restaurant & Bar Operations',
-    duration: '3 Years',
-    desc: 'Comprehensive training in dining room operations, beverage management, and fine dining etiquette for 5-star establishments.',
-    tags: ['Service Skills', 'Beverage Knowledge', 'Fine Dining'],
-  },
-  {
-    image: img('accommodation'),
-    title: 'Accommodation Management',
-    subtitle: 'Housekeeping & Room Division',
-    duration: '3 Years',
-    desc: 'Professional laundry, housekeeping, room division management and guest services in modern hotel environments.',
-    tags: ['Housekeeping', 'Laundry', 'Room Division'],
-  },
-  {
-    image: img('front-office'),
-    title: 'Front Office Operations',
-    subtitle: 'Guest Relations & Hotel Operations',
-    duration: '3 Years',
-    desc: 'Front desk operations, reservations management, guest relations and Property Management Systems (PMS) training.',
-    tags: ['Front Desk', 'PMS Systems', 'Guest Relations'],
-  },
-];
-
 export default function Programs() {
+  const content = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,7 +55,7 @@ export default function Programs() {
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {programs.map((prog, i) => (
+          {content.programs.map((prog, i) => (
             <motion.div
               key={i}
               className="program-card opacity-0 group relative overflow-hidden bg-white flex flex-col"
