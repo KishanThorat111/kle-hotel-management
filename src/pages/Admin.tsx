@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   LogOut, Download, Search, Trash2, Phone, User,
   RefreshCw, MessageCircle, TrendingUp, Calendar, Users, Inbox, X,
   LayoutDashboard, Edit3, Image, Shield, Globe, Check,
   Upload, Copy, AlertTriangle, Eye, EyeOff, ChevronDown, BarChart2, MousePointer, Activity,
+  Sun, Moon, ExternalLink, Info, Sparkles,
 } from 'lucide-react';
 import { DEFAULT_CONTENT } from '@/lib/siteContent';
 import type { HeroContent, AboutContent, ProgramItem, ContactContent } from '@/lib/siteContent';
+import { broadcastCmsUpdate } from '@/lib/cmsBroadcast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab            = 'dashboard' | 'enquiries' | 'content' | 'media' | 'security' | 'analytics';
@@ -107,11 +109,35 @@ async function compressToWebP(file: File): Promise<Blob> {
     img.src = ou;
   });
 }
-async function uploadFile(file: File, token: string, onPct: (n: number) => void): Promise<string> {
+
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+
+interface UploadResult {
+  url: string;
+  originalBytes: number;
+  compressedBytes: number;
+  filename: string;
+}
+
+function validateFile(file: File): string | null {
+  if (!ACCEPTED_TYPES.includes(file.type)) {
+    return `Unsupported file type. Use JPG, PNG, WebP, or GIF.`;
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `File too large (${fmtBytes(file.size)}). Maximum is ${fmtBytes(MAX_UPLOAD_BYTES)}.`;
+  }
+  return null;
+}
+
+async function uploadFile(file: File, token: string, onPct: (n: number) => void): Promise<UploadResult> {
+  const err = validateFile(file);
+  if (err) throw new Error(err);
+
   onPct(15);
   const blob = await compressToWebP(file);
   onPct(55);
-  const name     = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '-');
+  const name     = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
   const filename = `${name}-${Date.now()}.webp`;
   const res = await fetch(`/api/upload?filename=${encodeURIComponent(filename)}`, {
     method: 'POST',
@@ -122,16 +148,90 @@ async function uploadFile(file: File, token: string, onPct: (n: number) => void)
   const data = await res.json() as { ok: boolean; url?: string; error?: string };
   if (!data.ok) throw new Error(data.error ?? 'Upload failed');
   onPct(100);
-  return data.url!;
+  return {
+    url: data.url!,
+    originalBytes: file.size,
+    compressedBytes: blob.size,
+    filename,
+  };
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens (CSS variable refs — actual values injected per theme) ─────
 const G = {
-  bg: '#060d1f', card: '#0D1B3E', cardAlt: '#0a1428',
-  border: 'rgba(255,255,255,0.08)', borderGold: 'rgba(201,168,76,0.2)',
-  gold: '#C9A84C', goldDim: 'rgba(201,168,76,0.6)',
-  text: '#FAF7F0', textDim: 'rgba(255,255,255,0.55)', textMuted: 'rgba(255,255,255,0.3)',
+  bg:             'var(--g-bg)',
+  card:           'var(--g-card)',
+  cardAlt:        'var(--g-card-alt)',
+  border:         'var(--g-border)',
+  borderGold:     'var(--g-border-gold)',
+  gold:           'var(--g-gold)',
+  goldDim:        'var(--g-gold-dim)',
+  goldFill:       'var(--g-gold-fill)',
+  goldFillStrong: 'var(--g-gold-fill-strong)',
+  goldHover:      'var(--g-gold-hover)',
+  goldGradEnd:    'var(--g-gold-grad-end)',
+  text:           'var(--g-text)',
+  textDim:        'var(--g-text-dim)',
+  textMuted:      'var(--g-text-muted)',
+  field:          'var(--g-field)',
+  fieldSubtle:    'var(--g-field-subtle)',
+  rowAlt:         'var(--g-row-alt)',
+  shadow:         'var(--g-shadow)',
+  onGold:         '#081123',  // text on gold buttons (constant in both themes)
 } as const;
+
+type ThemeName = 'light' | 'dark';
+const THEMES: Record<ThemeName, Record<string, string>> = {
+  light: {
+    '--g-bg':               '#F5F3ED',
+    '--g-card':             '#FFFFFF',
+    '--g-card-alt':         '#F0EDE3',
+    '--g-border':           'rgba(13,27,62,0.10)',
+    '--g-border-gold':      'rgba(168,135,46,0.30)',
+    '--g-gold':             '#A8872E',
+    '--g-gold-dim':         'rgba(168,135,46,0.75)',
+    '--g-gold-fill':        'rgba(168,135,46,0.10)',
+    '--g-gold-fill-strong': 'rgba(168,135,46,0.18)',
+    '--g-gold-hover':       'rgba(168,135,46,0.06)',
+    '--g-gold-grad-end':    '#D4B860',
+    '--g-text':             '#0D1B3E',
+    '--g-text-dim':         'rgba(13,27,62,0.70)',
+    '--g-text-muted':       'rgba(13,27,62,0.45)',
+    '--g-field':            '#FAFAF5',
+    '--g-field-subtle':     '#F6F4EC',
+    '--g-row-alt':          'rgba(13,27,62,0.025)',
+    '--g-shadow':           '0 2px 12px rgba(13,27,62,0.06)',
+  },
+  dark: {
+    '--g-bg':               '#060D1F',
+    '--g-card':             '#0D1B3E',
+    '--g-card-alt':         '#0A1428',
+    '--g-border':           'rgba(255,255,255,0.08)',
+    '--g-border-gold':      'rgba(201,168,76,0.20)',
+    '--g-gold':             '#C9A84C',
+    '--g-gold-dim':         'rgba(201,168,76,0.60)',
+    '--g-gold-fill':        'rgba(201,168,76,0.10)',
+    '--g-gold-fill-strong': 'rgba(201,168,76,0.16)',
+    '--g-gold-hover':       'rgba(201,168,76,0.05)',
+    '--g-gold-grad-end':    '#EDD68A',
+    '--g-text':             '#FAF7F0',
+    '--g-text-dim':         'rgba(255,255,255,0.55)',
+    '--g-text-muted':       'rgba(255,255,255,0.30)',
+    '--g-field':            'rgba(255,255,255,0.04)',
+    '--g-field-subtle':     'rgba(255,255,255,0.03)',
+    '--g-row-alt':          'rgba(255,255,255,0.015)',
+    '--g-shadow':           '0 4px 24px rgba(0,0,0,0.4)',
+  },
+};
+
+// ─── Theme persistence + context ──────────────────────────────────────────────
+const THEME_KEY = 'kle_admin_theme';
+function getStoredTheme(): ThemeName {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === 'dark' || v === 'light') return v;
+  } catch { /* ignore */ }
+  return 'light';
+}
 
 // ─── Toast system ─────────────────────────────────────────────────────────────
 function Toasts({ items }: { items: ToastItem[] }) {
@@ -169,7 +269,7 @@ function TInput({ value, onChange, placeholder, type = 'text' }: {
   return (
     <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.text, fontFamily: 'Inter, sans-serif' }} />
+      style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text, fontFamily: 'Inter, sans-serif' }} />
   );
 }
 function TTextarea({ value, onChange, placeholder, rows = 3 }: {
@@ -178,7 +278,7 @@ function TTextarea({ value, onChange, placeholder, rows = 3 }: {
   return (
     <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-vertical"
-      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.text, fontFamily: 'Inter, sans-serif' }} />
+      style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text, fontFamily: 'Inter, sans-serif' }} />
   );
 }
 function SaveBtn({ status, onClick }: { status: SaveStatus; onClick: () => void }) {
@@ -191,7 +291,7 @@ function SaveBtn({ status, onClick }: { status: SaveStatus; onClick: () => void 
   return (
     <button onClick={onClick} disabled={status === 'saving'}
       className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold"
-      style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}bb)`, color: '#081123', opacity: status === 'saving' ? 0.7 : 1 }}>
+      style={{ background: `linear-gradient(135deg, ${cfg.color}, color-mix(in srgb, ${cfg.color} 70%, transparent))`, color: G.onGold, opacity: status === 'saving' ? 0.7 : 1 }}>
       {cfg.label}
     </button>
   );
@@ -203,6 +303,17 @@ function StatusBadge({ customised, updatedAt }: { customised: boolean; updatedAt
       <span className="text-xs" style={{ color: G.textMuted, fontFamily: 'Inter, sans-serif' }}>
         {customised ? `CMS active · Updated ${updatedAt ?? ''}` : 'Using hardcoded defaults'}
       </span>
+    </div>
+  );
+}
+function PublishHint() {
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-lg mb-5"
+      style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
+      <Info size={13} style={{ color: G.gold, flexShrink: 0, marginTop: 2 }} />
+      <p className="text-xs leading-relaxed" style={{ color: G.textDim }}>
+        Edit the fields below and press <strong style={{ color: G.text }}>Save Changes</strong>. Updates appear on the public website instantly — use <strong style={{ color: G.text }}>View Live</strong> in the top bar to verify.
+      </p>
     </div>
   );
 }
@@ -221,8 +332,8 @@ function ImageField({ label, value, onChange, token, images, onRefreshImages }: 
     if (!files?.[0]) return;
     setUploading(true); setUploadPct(0);
     try {
-      const url = await uploadFile(files[0], token, setUploadPct);
-      onChange(url); onRefreshImages();
+      const res = await uploadFile(files[0], token, setUploadPct);
+      onChange(res.url); onRefreshImages();
     } catch (err) { alert((err as Error).message); }
     finally { setUploading(false); setUploadPct(0); }
   };
@@ -237,12 +348,12 @@ function ImageField({ label, value, onChange, token, images, onRefreshImages }: 
           <div className="flex gap-2">
             <button onClick={() => setShowPicker(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-              style={{ background: 'rgba(201,168,76,0.08)', border: `1px solid ${G.borderGold}`, color: G.gold }}>
+              style={{ background: G.goldFill, border: `1px solid ${G.borderGold}`, color: G.gold }}>
               <Image size={11} />Choose from Media
             </button>
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-              style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.textDim }}>
+              style={{ background: G.field, border: `1px solid ${G.border}`, color: G.textDim }}>
               <Upload size={11} />Upload New
             </button>
           </div>
@@ -294,7 +405,7 @@ function StatCard({ icon: Icon, label, value, gold }: { icon: LucideIcon; label:
     <div className="rounded-xl p-5 flex items-center gap-4"
       style={{ background: G.card, border: `1px solid ${gold ? G.borderGold : G.border}` }}>
       <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: gold ? 'rgba(201,168,76,0.1)' : 'rgba(255,255,255,0.04)' }}>
+        style={{ background: gold ? G.goldFill : G.field }}>
         <Icon size={18} style={{ color: gold ? G.gold : G.textMuted }} />
       </div>
       <div>
@@ -325,10 +436,10 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: G.bg }}>
       <div className="w-full max-w-sm rounded-2xl p-8" style={{ background: G.card, border: `1px solid ${G.borderGold}` }}>
-        <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,#C9A84C,transparent)', marginBottom: 32, borderRadius: 1 }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg,transparent,${G.gold},transparent)`, marginBottom: 32, borderRadius: 1 }} />
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ border: `1px solid ${G.borderGold}`, background: 'rgba(201,168,76,0.05)' }}>
+            style={{ border: `1px solid ${G.borderGold}`, background: G.goldHover }}>
             <Shield size={28} style={{ color: G.gold }} />
           </div>
           <h1 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', color: G.text }}>
@@ -340,7 +451,7 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
         </div>
         <div className="mb-4">
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg"
-            style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${err ? 'rgba(239,68,68,0.5)' : G.border}` }}>
+            style={{ background: G.field, border: `1px solid ${err ? 'rgba(239,68,68,0.5)' : G.border}` }}>
             <Shield size={14} style={{ color: G.goldDim, flexShrink: 0 }} />
             <input type={show ? 'text' : 'password'} placeholder="Enter admin PIN" value={pin}
               autoComplete="off"
@@ -360,7 +471,7 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
         </div>
         <button onClick={submit} disabled={busy}
           className="w-full py-3 rounded-lg text-sm font-semibold transition-all"
-          style={{ background: `linear-gradient(135deg, ${G.gold}, #EDD68A)`, color: '#081123', opacity: busy ? 0.7 : 1 }}>
+          style={{ background: `linear-gradient(135deg, ${G.gold}, ${G.goldGradEnd})`, color: G.onGold, opacity: busy ? 0.7 : 1 }}>
           {busy ? 'Verifying…' : 'Access Dashboard'}
         </button>
         <p className="text-xs text-center mt-4" style={{ color: G.textMuted }}>
@@ -368,6 +479,63 @@ function LoginScreen({ onLogin }: { onLogin: (pin: string) => Promise<string | n
         </p>
       </div>
     </div>
+  );
+}
+
+// ─── Top Bar (theme toggle, view live, help) ──────────────────────────────────
+function TopBar({ theme, onTheme, tab }: {
+  theme: ThemeName; onTheme: (t: ThemeName) => void; tab: Tab;
+}) {
+  const tabLabels: Record<Tab, string> = {
+    dashboard: 'Dashboard', enquiries: 'Enquiries', analytics: 'Analytics',
+    content: 'Website Content', media: 'Media Library', security: 'Security',
+  };
+  const openLive = () => {
+    // Cache-bust so the website tab is forced to refetch fresh content
+    window.open(`/?_t=${Date.now()}`, '_blank', 'noopener,noreferrer');
+  };
+  return (
+    <header
+      className="sticky top-0 z-40 flex items-center justify-between gap-4 px-6 py-3"
+      style={{
+        background: G.card,
+        borderBottom: `1px solid ${G.border}`,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-xs tracking-widest uppercase" style={{ color: G.goldDim, fontFamily: 'Inter, sans-serif' }}>
+          {tabLabels[tab]}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* Theme toggle */}
+        <div className="flex items-center rounded-lg p-0.5"
+          style={{ background: G.field, border: `1px solid ${G.border}` }}>
+          {(['light', 'dark'] as const).map(t => (
+            <button key={t} onClick={() => onTheme(t)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all"
+              title={t === 'light' ? 'Light theme' : 'Dark theme'}
+              style={{
+                background: theme === t ? G.goldFill : 'transparent',
+                color: theme === t ? G.gold : G.textMuted,
+                border: theme === t ? `1px solid ${G.borderGold}` : '1px solid transparent',
+              }}>
+              {t === 'light' ? <Sun size={12} /> : <Moon size={12} />}
+              <span className="hidden sm:inline capitalize">{t}</span>
+            </button>
+          ))}
+        </div>
+        {/* View live */}
+        <button onClick={openLive}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
+          title="Open the public website with the latest changes"
+          style={{ background: G.goldFill, border: `1px solid ${G.borderGold}`, color: G.gold }}>
+          <ExternalLink size={12} />
+          <span className="hidden sm:inline">View Live</span>
+        </button>
+      </div>
+    </header>
   );
 }
 
@@ -386,12 +554,12 @@ function Sidebar({ active, onTab, onLogout, enquiryCount }: {
 }) {
   return (
     <aside className="flex-shrink-0 w-60 flex flex-col"
-      style={{ background: '#060d1f', borderRight: `1px solid ${G.border}`, minHeight: '100vh', position: 'sticky', top: 0 }}>
+      style={{ background: G.bg, borderRight: `1px solid ${G.border}`, minHeight: '100vh', position: 'sticky', top: 0 }}>
       {/* Brand */}
       <div className="p-5 border-b" style={{ borderColor: G.border }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(201,168,76,0.12)', border: `1px solid ${G.borderGold}` }}>
+            style={{ background: G.goldFillStrong, border: `1px solid ${G.borderGold}` }}>
             <span className="text-xs font-bold" style={{ color: G.gold, fontFamily: 'Inter, sans-serif' }}>KLE</span>
           </div>
           <div>
@@ -406,7 +574,7 @@ function Sidebar({ active, onTab, onLogout, enquiryCount }: {
           <button key={n.id} onClick={() => onTab(n.id)}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all relative"
             style={{
-              background: active === n.id ? 'rgba(201,168,76,0.1)' : 'transparent',
+              background: active === n.id ? G.goldFill : 'transparent',
               border: `1px solid ${active === n.id ? G.borderGold : 'transparent'}`,
             }}>
             <n.icon size={16} style={{ color: active === n.id ? G.gold : G.textMuted }} />
@@ -416,7 +584,7 @@ function Sidebar({ active, onTab, onLogout, enquiryCount }: {
             </div>
             {n.id === 'enquiries' && enquiryCount > 0 && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold min-w-5 h-5 rounded-full flex items-center justify-center px-1"
-                style={{ background: G.gold, color: '#081123' }}>{enquiryCount}</span>
+                style={{ background: G.gold, color: G.onGold }}>{enquiryCount}</span>
             )}
           </button>
         ))}
@@ -444,12 +612,39 @@ function DashboardTab({ total, stats, recentEnquiries }: {
 }) {
   const expiresAt = sessionStorage.getItem('kle_admin_expiry') ?? '';
   const expiresIn = expiresAt ? Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 3600000)) : 0;
+  const [showHelp, setShowHelp] = useState(() => {
+    try { return localStorage.getItem('kle_admin_seen_help') !== '1'; } catch { return true; }
+  });
+  const dismissHelp = () => {
+    setShowHelp(false);
+    try { localStorage.setItem('kle_admin_seen_help', '1'); } catch { /* ignore */ }
+  };
   return (
     <div className="p-6 md:p-8">
       <div className="mb-8">
         <h2 className="text-2xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Dashboard</h2>
-        <p className="text-xs" style={{ color: G.textMuted }}>Session active · Expires in ~{expiresIn}h</p>
+        <p className="text-xs" style={{ color: G.textMuted }}>Session active \u00b7 Expires in ~{expiresIn}h</p>
       </div>
+
+      {showHelp && (
+        <div className="rounded-xl p-5 mb-6 flex items-start gap-3"
+          style={{ background: G.goldHover, border: `1px solid ${G.borderGold}` }}>
+          <Sparkles size={18} style={{ color: G.gold, flexShrink: 0, marginTop: 2 }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium mb-2" style={{ color: G.text }}>Welcome to your admin panel</p>
+            <ul className="text-xs space-y-1 list-disc list-inside" style={{ color: G.textDim }}>
+              <li><strong style={{ color: G.text }}>Content</strong> \u2014 edit Hero, About, Programs, and Contact text shown on your website.</li>
+              <li><strong style={{ color: G.text }}>Media</strong> \u2014 upload images (auto-compressed and stored on Cloudflare R2).</li>
+              <li><strong style={{ color: G.text }}>Enquiries</strong> \u2014 see who has filled the popup form and reply on WhatsApp.</li>
+              <li><strong style={{ color: G.text }}>View Live</strong> (top right) \u2014 opens the public website with your latest changes.</li>
+            </ul>
+          </div>
+          <button onClick={dismissHelp} className="p-1" style={{ color: G.textMuted }} title="Got it">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Users}      label="Total Enquiries" value={total}                              gold />
         <StatCard icon={Calendar}   label="Today"           value={stats?.today ?? 0} />
@@ -461,7 +656,7 @@ function DashboardTab({ total, stats, recentEnquiries }: {
           <p className="w-full text-xs font-medium mb-1" style={{ color: G.goldDim }}>ENQUIRY BREAKDOWN</p>
           {stats.by_interest.map(b => (
             <div key={b.interest} className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(201,168,76,0.08)', border: `1px solid ${G.borderGold}` }}>
+              style={{ background: G.goldFill, border: `1px solid ${G.borderGold}` }}>
               <span className="text-xs" style={{ color: G.gold }}>{b.interest}</span>
               <span className="text-xs font-bold" style={{ color: G.text }}>{b.cnt}</span>
             </div>
@@ -474,10 +669,10 @@ function DashboardTab({ total, stats, recentEnquiries }: {
         </div>
         {recentEnquiries.slice(0, 5).map((e, i) => (
           <div key={e.id} className="grid grid-cols-[2fr_1fr_1fr] gap-4 px-5 py-3 items-center"
-            style={{ background: i % 2 === 0 ? G.card : 'rgba(255,255,255,0.01)', borderBottom: `1px solid ${G.border}` }}>
+            style={{ background: i % 2 === 0 ? G.card : G.rowAlt, borderBottom: `1px solid ${G.border}` }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(201,168,76,0.1)', border: `1px solid ${G.borderGold}` }}>
+                style={{ background: G.goldFill, border: `1px solid ${G.borderGold}` }}>
                 <User size={11} style={{ color: G.gold }} />
               </div>
               <div>
@@ -485,7 +680,7 @@ function DashboardTab({ total, stats, recentEnquiries }: {
                 <p className="text-[10px]" style={{ color: G.textMuted }}>+91 {e.phone}</p>
               </div>
             </div>
-            <span className="text-xs px-2 py-0.5 rounded-full w-fit" style={{ background: 'rgba(201,168,76,0.1)', color: G.gold }}>{e.interest}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full w-fit" style={{ background: G.goldFill, color: G.gold }}>{e.interest}</span>
             <span className="text-[10px]" style={{ color: G.textMuted }}>{formatDate(e.created_at)}</span>
           </div>
         ))}
@@ -522,12 +717,12 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
         <div className="flex gap-2">
           <button onClick={onRefresh}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
-            style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.textDim }}>
+            style={{ background: G.field, border: `1px solid ${G.border}`, color: G.textDim }}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />Refresh
           </button>
           <button onClick={() => exportCSV(enquiries)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
-            style={{ background: 'rgba(201,168,76,0.08)', border: `1px solid ${G.borderGold}`, color: G.gold }}>
+            style={{ background: G.goldFill, border: `1px solid ${G.borderGold}`, color: G.gold }}>
             <Download size={12} />Export CSV
           </button>
         </div>
@@ -552,10 +747,10 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
           ? <div className="py-16 text-center text-sm" style={{ color: G.textMuted, background: G.card }}>No enquiries found.</div>
           : filtered.map((e, i) => (
             <div key={e.id} className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] gap-4 px-5 py-4 items-center"
-              style={{ background: i % 2 === 0 ? G.card : 'rgba(255,255,255,0.015)', borderBottom: `1px solid ${G.border}` }}>
+              style={{ background: i % 2 === 0 ? G.card : G.rowAlt, borderBottom: `1px solid ${G.border}` }}>
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(201,168,76,0.1)', border: `1px solid ${G.borderGold}` }}>
+                  style={{ background: G.goldFill, border: `1px solid ${G.borderGold}` }}>
                   <User size={11} style={{ color: G.gold }} />
                 </div>
                 <span className="text-sm font-medium truncate" style={{ color: G.text }}>{e.name}</span>
@@ -564,7 +759,7 @@ function EnquiriesTab({ enquiries, stats, total, page, loading, deleting, search
                 <Phone size={10} style={{ color: G.textMuted }} />
                 <span className="text-xs" style={{ color: G.textDim }}>+91 {e.phone}</span>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded-full w-fit" style={{ background: 'rgba(201,168,76,0.1)', color: G.gold }}>{e.interest}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full w-fit" style={{ background: G.goldFill, color: G.gold }}>{e.interest}</span>
               <span className="text-[11px]" style={{ color: G.textMuted }}>{formatDate(e.created_at)}</span>
               <div className="flex gap-2">
                 <a href={waLink(e)} target="_blank" rel="noopener noreferrer"
@@ -632,7 +827,7 @@ function HeroEditor({ token, images, onRefreshImages, addToast }: {
         setStatus('saved'); setCustomised(true);
         setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
         addToast('Hero section saved!', 'success');
-        sessionStorage.removeItem('kle_cms_v2');
+        broadcastCmsUpdate();
       } else { setStatus('error'); addToast('Save failed', 'error'); }
     } catch { setStatus('error'); addToast('Network error', 'error'); }
     finally { setTimeout(() => setStatus('idle'), 2500); }
@@ -646,13 +841,14 @@ function HeroEditor({ token, images, onRefreshImages, addToast }: {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Hero Section</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
         </div>
         <SaveBtn status={status} onClick={save} />
       </div>
+      <PublishHint />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Field label="Main Heading">
           <TInput value={data.heading} onChange={v => setData({ ...data, heading: v })} placeholder="Your Place in the World of Hospitality" />
@@ -679,7 +875,7 @@ function HeroEditor({ token, images, onRefreshImages, addToast }: {
           <p className="text-xs font-medium mb-3" style={{ color: G.goldDim }}>STATS BAR (4 cards)</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {data.stats.map((s, i) => (
-              <div key={i} className="p-3 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+              <div key={i} className="p-3 rounded-xl space-y-2" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
                 <TInput value={String(s.value)} onChange={v => updStat(i, 'value', v)} placeholder="25" />
                 <TInput value={s.suffix}        onChange={v => updStat(i, 'suffix', v)} placeholder="+" />
                 <TInput value={s.label}         onChange={v => updStat(i, 'label', v)}  placeholder="Years" />
@@ -723,7 +919,7 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
         setStatus('saved'); setCustomised(true);
         setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
         addToast('About section saved!', 'success');
-        sessionStorage.removeItem('kle_cms_v2');
+        broadcastCmsUpdate();
       } else { setStatus('error'); addToast('Save failed', 'error'); }
     } catch { setStatus('error'); addToast('Network error', 'error'); }
     finally { setTimeout(() => setStatus('idle'), 2500); }
@@ -738,13 +934,14 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>About Section</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
         </div>
         <SaveBtn status={status} onClick={save} />
       </div>
+      <PublishHint />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Field label="Heading"><TInput value={data.heading}    onChange={v => setData({ ...data, heading: v })} /></Field>
         <Field label="Subheading"><TInput value={data.subheading} onChange={v => setData({ ...data, subheading: v })} /></Field>
@@ -758,7 +955,7 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
           <p className="text-xs font-medium mb-3" style={{ color: G.goldDim }}>STAT HIGHLIGHTS</p>
           <div className="grid grid-cols-3 gap-3">
             {data.stats.map((s, i) => (
-              <div key={i} className="p-3 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+              <div key={i} className="p-3 rounded-xl space-y-2" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
                 <TInput value={s.value} onChange={v => updStat(i, 'value', v)} placeholder="25+" />
                 <TInput value={s.label} onChange={v => updStat(i, 'label', v)} placeholder="Years" />
               </div>
@@ -769,7 +966,7 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
           <p className="text-xs font-medium mb-3" style={{ color: G.goldDim }}>PILLARS (3 cards)</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {data.pillars.map((p, i) => (
-              <div key={i} className="p-4 rounded-xl space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+              <div key={i} className="p-4 rounded-xl space-y-3" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
                 <TInput   value={p.title} onChange={v => updPillar(i, 'title', v)} placeholder="Title" />
                 <TTextarea value={p.desc} onChange={v => updPillar(i, 'desc',  v)} rows={3} placeholder="Description" />
               </div>
@@ -813,7 +1010,7 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
         setStatus('saved'); setCustomised(true);
         setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
         addToast('Programs saved!', 'success');
-        sessionStorage.removeItem('kle_cms_v2');
+        broadcastCmsUpdate();
       } else { setStatus('error'); addToast('Save failed', 'error'); }
     } catch { setStatus('error'); addToast('Network error', 'error'); }
     finally { setTimeout(() => setStatus('idle'), 2500); }
@@ -828,20 +1025,21 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Programs</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
         </div>
         <SaveBtn status={status} onClick={save} />
       </div>
+      <PublishHint />
       <div className="space-y-3">
         {data.map((prog, i) => (
           <div key={i} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${i === open ? G.borderGold : G.border}` }}>
             <button className="w-full flex items-center justify-between px-5 py-4" style={{ background: G.card }}
               onClick={() => setOpen(open === i ? -1 : i)}>
               <div className="flex items-center gap-3">
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(201,168,76,0.1)', color: G.gold }}>{i + 1}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: G.goldFill, color: G.gold }}>{i + 1}</span>
                 <span className="text-sm font-medium" style={{ color: G.text }}>{prog.title}</span>
                 <span className="text-xs" style={{ color: G.textMuted }}>{prog.subtitle}</span>
               </div>
@@ -901,7 +1099,7 @@ function ContactEditor({ token, addToast }: {
         setStatus('saved'); setCustomised(true);
         setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
         addToast('Contact info saved!', 'success');
-        sessionStorage.removeItem('kle_cms_v2');
+        broadcastCmsUpdate();
       } else { setStatus('error'); addToast('Save failed', 'error'); }
     } catch { setStatus('error'); addToast('Network error', 'error'); }
     finally { setTimeout(() => setStatus('idle'), 2500); }
@@ -909,13 +1107,14 @@ function ContactEditor({ token, addToast }: {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Contact & Settings</h3>
           <StatusBadge customised={customised} updatedAt={updatedAt} />
         </div>
         <SaveBtn status={status} onClick={save} />
       </div>
+      <PublishHint />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Field label="Phone Number">
           <TInput value={data.phone} onChange={v => setData({ ...data, phone: v })} placeholder="+91 63645 04056" />
@@ -933,7 +1132,7 @@ function ContactEditor({ token, addToast }: {
           <Field label="Address"><TTextarea value={data.address} onChange={v => setData({ ...data, address: v })} rows={2} /></Field>
         </div>
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+          <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
             <button onClick={() => setData({ ...data, admission_open: !data.admission_open })}
               className="relative w-10 h-6 rounded-full transition-colors"
               style={{ background: data.admission_open ? '#25D366' : 'rgba(255,255,255,0.15)' }}>
@@ -1001,8 +1200,9 @@ function MediaTab({ token, images, loading, onRefresh, addToast }: {
     if (!files?.[0]) return;
     setUploading(true); setUploadPct(0);
     try {
-      const url = await uploadFile(files[0], token, setUploadPct);
-      addToast(`Uploaded: ${url.split('/').pop()}`, 'success');
+      const r = await uploadFile(files[0], token, setUploadPct);
+      const saved = r.originalBytes > 0 ? Math.round((1 - r.compressedBytes / r.originalBytes) * 100) : 0;
+      addToast(`Uploaded ${r.filename} · ${fmtBytes(r.originalBytes)} → ${fmtBytes(r.compressedBytes)} (${saved}% smaller)`, 'success');
       onRefresh();
     } catch (err) { addToast((err as Error).message, 'error'); }
     finally { setUploading(false); setUploadPct(0); }
@@ -1037,7 +1237,7 @@ function MediaTab({ token, images, loading, onRefresh, addToast }: {
         </div>
         <button onClick={onRefresh}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
-          style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.textDim }}>
+          style={{ background: G.field, border: `1px solid ${G.border}`, color: G.textDim }}>
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />Refresh
         </button>
       </div>
@@ -1048,14 +1248,16 @@ function MediaTab({ token, images, loading, onRefresh, addToast }: {
         onClick={() => fileRef.current?.click()}
         className="rounded-2xl border-2 border-dashed p-10 text-center mb-6 cursor-pointer transition-all"
         style={{
-          borderColor: dragging ? G.gold : 'rgba(255,255,255,0.1)',
-          background: dragging ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.02)',
+          borderColor: dragging ? G.gold : G.border,
+          background: dragging ? G.goldHover : G.fieldSubtle,
         }}>
         <Upload size={28} className="mx-auto mb-3" style={{ color: dragging ? G.gold : G.textMuted }} />
-        <p className="text-sm font-medium mb-1" style={{ color: dragging ? G.gold : G.textDim }}>
-          {uploading ? `Uploading… ${uploadPct}%` : 'Drop images here or click to upload'}
+        <p className="text-sm font-medium mb-1" style={{ color: dragging ? G.gold : G.text }}>
+          {uploading ? `Uploading\u2026 ${uploadPct}%` : 'Drop images here or click to choose'}
         </p>
-        <p className="text-xs" style={{ color: G.textMuted }}>Auto-compressed to WebP · Max 10 MB · Cloudflare R2</p>
+        <p className="text-xs" style={{ color: G.textMuted }}>
+          JPG, PNG, WebP, GIF \u00b7 Up to 10\u00a0MB \u00b7 Auto-compressed to WebP and stored on Cloudflare R2
+        </p>
         {uploading && (
           <div className="mt-4 h-1.5 rounded-full overflow-hidden max-w-xs mx-auto" style={{ background: G.border }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${uploadPct}%`, background: G.gold }} />
@@ -1077,7 +1279,7 @@ function MediaTab({ token, images, loading, onRefresh, addToast }: {
                 <button onClick={() => copyUrl(img.url)}
                   className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px]"
                   style={{
-                    background: copied === img.url ? 'rgba(37,211,102,0.15)' : 'rgba(255,255,255,0.04)',
+                    background: copied === img.url ? 'rgba(37,211,102,0.15)' : G.field,
                     color: copied === img.url ? '#25D366' : G.textMuted,
                     border: `1px solid ${G.border}`,
                   }}>
@@ -1168,7 +1370,7 @@ function SecurityTab({ token, onLogout, addToast }: {
         <p className="text-xs font-medium mb-4" style={{ color: G.goldDim }}>CHANGE ADMIN PIN</p>
         <div className="space-y-4">
           <Field label="New PIN" hint="Minimum 12 characters — use letters, numbers, and symbols">
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}` }}>
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg" style={{ background: G.field, border: `1px solid ${G.border}` }}>
               <input type={showNew ? 'text' : 'password'} value={newPin} autoComplete="new-password"
                 onChange={e => setNewPin(e.target.value)} placeholder="New PIN (min 12 chars)"
                 className="flex-1 bg-transparent outline-none text-sm" style={{ color: G.text }} />
@@ -1178,7 +1380,7 @@ function SecurityTab({ token, onLogout, addToast }: {
             </div>
           </Field>
           <Field label="Confirm New PIN">
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}` }}>
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg" style={{ background: G.field, border: `1px solid ${G.border}` }}>
               <input type={showConf ? 'text' : 'password'} value={confPin} autoComplete="new-password"
                 onChange={e => setConfPin(e.target.value)} placeholder="Repeat PIN"
                 className="flex-1 bg-transparent outline-none text-sm" style={{ color: G.text }} />
@@ -1240,8 +1442,8 @@ function AnalyticsTab({ token, addToast }: {
     wa_click: 'WhatsApp Clicks', popup_close: 'Popup Closed',
   };
   const EVENT_COLORS: Record<string, string> = {
-    page_view: '#C9A84C', apply_click: '#60a5fa', popup_open: '#a78bfa',
-    form_submit: '#34d399', wa_click: '#25D366', popup_close: 'rgba(255,255,255,0.3)',
+    page_view: G.gold, apply_click: '#60a5fa', popup_open: '#a78bfa',
+    form_submit: '#34d399', wa_click: '#25D366', popup_close: G.textMuted,
   };
 
   // Conversion funnel
@@ -1265,7 +1467,7 @@ function AnalyticsTab({ token, addToast }: {
         </div>
         <button onClick={load}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
-          style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${G.border}`, color: G.textDim }}>
+          style={{ background: G.field, border: `1px solid ${G.border}`, color: G.textDim }}>
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />Refresh
         </button>
       </div>
@@ -1283,12 +1485,12 @@ function AnalyticsTab({ token, addToast }: {
         <p className="text-xs font-medium mb-5" style={{ color: G.goldDim }}>CONVERSION FUNNEL</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Page Views',     value: views,   color: '#C9A84C', pctOf: null },
+            { label: 'Page Views',     value: views,   color: G.gold,   pctOf: null },
             { label: 'Popup Opens',    value: popups,  color: '#a78bfa', pctOf: views },
             { label: 'Form Submits',   value: submits, color: '#34d399', pctOf: popups },
             { label: 'WhatsApp Clicks',value: waCl,    color: '#25D366', pctOf: views },
           ].map(f => (
-            <div key={f.label} className="text-center p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${G.border}` }}>
+            <div key={f.label} className="text-center p-4 rounded-xl" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
               <p className="text-3xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: f.color }}>{f.value}</p>
               <p className="text-[11px] font-medium mb-1" style={{ color: G.textDim }}>{f.label}</p>
               {f.pctOf !== null && (
@@ -1315,7 +1517,7 @@ function AnalyticsTab({ token, addToast }: {
                   className="w-full rounded-t transition-all"
                   style={{
                     height: `${Math.max((d.cnt / maxCnt) * 100, 4)}%`,
-                    background: `linear-gradient(180deg, #C9A84C, rgba(201,168,76,0.3))`,
+                    background: `linear-gradient(180deg, ${G.gold}, color-mix(in srgb, ${G.gold} 30%, transparent))`,
                     minHeight: 4,
                   }}
                 />
@@ -1339,7 +1541,7 @@ function AnalyticsTab({ token, addToast }: {
         </div>
         {data?.by_event.map((e, i) => (
           <div key={e.event_type} className="flex items-center justify-between px-5 py-3"
-            style={{ background: i % 2 === 0 ? G.card : 'rgba(255,255,255,0.01)', borderBottom: `1px solid ${G.border}` }}>
+            style={{ background: i % 2 === 0 ? G.card : G.rowAlt, borderBottom: `1px solid ${G.border}` }}>
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: EVENT_COLORS[e.event_type] ?? G.textMuted }} />
               <div className="flex items-center gap-2">
@@ -1377,7 +1579,13 @@ export default function Admin() {
   const [deleting, setDeleting]     = useState<number | null>(null);
   const [images, setImages]         = useState<R2Image[]>([]);
   const [loadingImg, setLoadingImg] = useState(false);
+  const [theme, setTheme]           = useState<ThemeName>(getStoredTheme);
   const tokenRef                    = useRef(token);
+
+  const handleTheme = useCallback((t: ThemeName) => {
+    setTheme(t);
+    try { localStorage.setItem(THEME_KEY, t); } catch { /* ignore */ }
+  }, []);
 
   const addToast = useCallback((msg: string, type: ToastItem['type'] = 'success') => {
     const id = crypto.randomUUID();
@@ -1470,13 +1678,19 @@ export default function Admin() {
     addToast('Enquiry deleted', 'info');
   };
 
-  if (!authed) return <LoginScreen onLogin={handleLogin} />;
+  if (!authed) return (
+    <div style={{ ...(THEMES[theme] as CSSProperties), background: G.bg, minHeight: '100vh' }}>
+      <LoginScreen onLogin={handleLogin} />
+    </div>
+  );
 
   return (
-    <div className="flex min-h-screen" style={{ background: G.bg, fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex min-h-screen"
+      style={{ ...(THEMES[theme] as CSSProperties), background: G.bg, fontFamily: 'Inter, sans-serif', color: G.text }}>
       <Toasts items={toasts} />
       <Sidebar active={activeTab} onTab={setActiveTab} onLogout={handleLogout} enquiryCount={total} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto flex flex-col">
+        <TopBar theme={theme} onTheme={handleTheme} tab={activeTab} />
         {activeTab === 'dashboard' && (
           <DashboardTab total={total} stats={stats} recentEnquiries={enquiries} />
         )}
