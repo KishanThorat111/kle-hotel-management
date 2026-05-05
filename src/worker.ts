@@ -76,12 +76,14 @@ function corsHeaders(origin: string | null) {
   };
 }
 
-function json(data: unknown, status = 200, origin: string | null = null): Response {
+function json(data: unknown, status = 200, origin: string | null = null, extraHeaders?: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin), ...(extraHeaders ?? {}) },
   });
 }
+
+const NO_STORE = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
 
 // ─── PIN helpers ─────────────────────────────────────────────────────────
 const enc = new TextEncoder();
@@ -301,7 +303,7 @@ export default {
           for (const row of results) {
             try { content[row.key as string] = JSON.parse(row.value as string); } catch { /* skip */ }
           }
-          return json({ ok: true, content }, 200, origin);
+          return json({ ok: true, content }, 200, origin, NO_STORE);
         }
 
         // GET /api/content/:key — single section (public)
@@ -311,7 +313,7 @@ export default {
           const row = await env.DB.prepare(`SELECT value FROM site_content WHERE key = ?`)
             .bind(key).first<{ value: string }>();
           if (!row) return json({ ok: false, error: 'Not found' }, 404, origin);
-          return json({ ok: true, data: JSON.parse(row.value) }, 200, origin);
+          return json({ ok: true, data: JSON.parse(row.value) }, 200, origin, NO_STORE);
         }
 
         // PUT /api/content/:key — upsert section (admin)

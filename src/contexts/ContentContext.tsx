@@ -64,15 +64,30 @@ export function ContentProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Refetch on mount only when cache is stale/missing
-    if (!readCache()) refetch();
+    // ALWAYS refetch on mount (stale-while-revalidate). Cache only seeds the
+    // first render to avoid a flash of defaults; the network call updates state
+    // and cache so visitors on any device/browser see admin edits within one
+    // page load — not after the 1h TTL.
+    refetch();
 
-    // Live update from admin tab
+    // Refetch when tab becomes visible again (long-lived sessions / SPA back-fwd).
+    const onVisible = () => { if (document.visibilityState === 'visible') refetch(); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    // Refetch on window focus (catches users who alt-tab back from admin).
+    window.addEventListener('focus', refetch);
+
+    // Live update from admin tab in the same browser.
     const unsub = subscribeCmsUpdates(() => {
       clearCache();
       refetch();
     });
-    return unsub;
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', refetch);
+      unsub();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
