@@ -11,7 +11,7 @@ import {
 import { DEFAULT_CONTENT } from '@/lib/siteContent';
 import type { HeroContent, AboutContent, ProgramItem, ContactContent,
   PlacementsContent, FacilitiesContent, CurriculumContent, StudentLifeContent,
-  TestimonialsContent, AdmissionContent, FooterContent } from '@/lib/siteContent';
+  TestimonialsContent, AdmissionContent, FooterContent, ProgramsHeader } from '@/lib/siteContent';
 import { broadcastCmsUpdate } from '@/lib/cmsBroadcast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -879,6 +879,12 @@ function HeroEditor({ token, images, onRefreshImages, addToast }: {
       </div>
       <PublishHint />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Top Badge Label" hint="Small label above heading">
+          <TInput value={data.badge_label ?? ''} onChange={v => setData({ ...data, badge_label: v })} placeholder="KLE Graduate School" />
+        </Field>
+        <Field label="Location Pill">
+          <TInput value={data.location_label ?? ''} onChange={v => setData({ ...data, location_label: v })} placeholder="Belagavi, Karnataka" />
+        </Field>
         <Field label="Main Heading">
           <TInput value={data.heading} onChange={v => setData({ ...data, heading: v })} placeholder="Your Place in the World of Hospitality" />
         </Field>
@@ -972,8 +978,26 @@ function AboutEditor({ token, images, onRefreshImages, addToast }: {
       </div>
       <PublishHint />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <Field label="Heading"><TInput value={data.heading}    onChange={v => setData({ ...data, heading: v })} /></Field>
-        <Field label="Subheading"><TInput value={data.subheading} onChange={v => setData({ ...data, subheading: v })} /></Field>
+        <Field label="Section Label" hint="Small label above the H2">
+          <TInput value={data.section_label ?? ''} onChange={v => setData({ ...data, section_label: v })} placeholder="About KLE Hotel Management" />
+        </Field>
+        <Field label="Tagline strip" hint="e.g. Learn · Prosper · Excel">
+          <TInput value={data.tagline ?? ''} onChange={v => setData({ ...data, tagline: v })} placeholder="Learn · Prosper · Excel" />
+        </Field>
+        <Field label="H2 — main text" hint="Before the gold word">
+          <TInput value={data.heading_main ?? ''} onChange={v => setData({ ...data, heading_main: v })} placeholder="A Legacy of" />
+        </Field>
+        <Field label="H2 — gold word(s)">
+          <TInput value={data.heading_em ?? ''} onChange={v => setData({ ...data, heading_em: v })} placeholder="Hospitality Excellence" />
+        </Field>
+        <Field label="H2 — after gold" hint="Trailing text after the gold phrase">
+          <TInput value={data.heading_after ?? ''} onChange={v => setData({ ...data, heading_after: v })} placeholder="Since 1997" />
+        </Field>
+        <div />
+        <Field label="Established year (badge)"><TInput value={data.established_year ?? ''} onChange={v => setData({ ...data, established_year: v })} placeholder="1997" /></Field>
+        <Field label="Established caption"><TInput value={data.established_caption ?? ''} onChange={v => setData({ ...data, established_caption: v })} placeholder="Belagavi, Karnataka" /></Field>
+        <Field label="Heading (legacy / SEO)"><TInput value={data.heading}    onChange={v => setData({ ...data, heading: v })} /></Field>
+        <Field label="Subheading (legacy / SEO)"><TInput value={data.subheading} onChange={v => setData({ ...data, subheading: v })} /></Field>
         <Field label="Paragraph 1"><TTextarea value={data.desc_1} onChange={v => setData({ ...data, desc_1: v })} rows={4} /></Field>
         <Field label="Paragraph 2"><TTextarea value={data.desc_2} onChange={v => setData({ ...data, desc_2: v })} rows={4} /></Field>
         <div className="md:col-span-2">
@@ -1013,6 +1037,7 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
   addToast: (msg: string, type: ToastItem['type']) => void;
 }) {
   const [data, setData]             = useState<ProgramItem[]>(DEFAULT_CONTENT.programs);
+  const [header, setHeader]         = useState<ProgramsHeader>(DEFAULT_CONTENT.programs_header ?? {});
   const [status, setStatus]         = useState<SaveStatus>('idle');
   const [customised, setCustomised] = useState(false);
   const [updatedAt, setUpdatedAt]   = useState('');
@@ -1024,18 +1049,31 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
       .then((d: { ok: boolean; data?: ProgramItem[] } | null) => {
         if (d?.ok && d.data) { setData(d.data); setCustomised(true); }
       }).catch(() => null);
+    fetch('/api/content/programs_header')
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { ok: boolean; data?: ProgramsHeader } | null) => {
+        if (d?.ok && d.data) setHeader({ ...DEFAULT_CONTENT.programs_header, ...d.data });
+      }).catch(() => null);
   }, []);
 
   const save = async () => {
     setStatus('saving');
     try {
-      const res = await fetch('/api/content/programs', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(data),
-      });
-      const d = await res.json() as { ok: boolean };
-      if (d.ok) {
+      const [r1, r2] = await Promise.all([
+        fetch('/api/content/programs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(data),
+        }),
+        fetch('/api/content/programs_header', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(header),
+        }),
+      ]);
+      const d1 = await r1.json() as { ok: boolean };
+      const d2 = await r2.json() as { ok: boolean };
+      if (d1.ok && d2.ok) {
         setStatus('saved'); setCustomised(true);
         setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
         addToast('Programs saved!', 'success');
@@ -1062,6 +1100,18 @@ function ProgramsEditor({ token, images, onRefreshImages, addToast }: {
         <SaveBtn status={status} onClick={save} />
       </div>
       <PublishHint />
+      <div className="mb-5 p-4 rounded-xl" style={{ background: G.cardAlt, border: `1px solid ${G.border}` }}>
+        <p className="text-xs font-semibold tracking-wider uppercase mb-3" style={{ color: G.goldDim }}>Section Header</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Section Label"><TInput value={header.section_label ?? ''} onChange={v => setHeader({ ...header, section_label: v })} placeholder="Our Programs" /></Field>
+          <Field label="Subtitle"><TInput value={header.subtitle ?? ''} onChange={v => setHeader({ ...header, subtitle: v })} placeholder="3-year undergraduate programs..." /></Field>
+          <Field label="Heading (main)"><TInput value={header.heading_main ?? ''} onChange={v => setHeader({ ...header, heading_main: v })} placeholder="Degrees That Open" /></Field>
+          <Field label="Heading (gold)"><TInput value={header.heading_em ?? ''} onChange={v => setHeader({ ...header, heading_em: v })} placeholder="Hotel Doors" /></Field>
+          <div className="md:col-span-2">
+            <Field label="Bottom note"><TTextarea value={header.bottom_note ?? ''} onChange={v => setHeader({ ...header, bottom_note: v })} rows={2} placeholder="All programs include 6-month industrial training..." /></Field>
+          </div>
+        </div>
+      </div>
       <div className="space-y-3">
         {data.map((prog, i) => (
           <div key={i} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${i === open ? G.borderGold : G.border}` }}>
