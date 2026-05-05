@@ -77,13 +77,13 @@ export default function Hero() {
         <div className="max-w-4xl">
           {/* Badge */}
           <div className="hero-badge opacity-0 flex items-center gap-2 mb-7">
-            <span className="section-label-navy">KLE Graduate School</span>
+            <span className="section-label-navy">{content.hero.badge_label ?? 'KLE Graduate School'}</span>
             <span
               className="hidden sm:flex items-center gap-1 text-[10px] tracking-widest uppercase"
               style={{ color: 'rgba(255,255,255,0.45)' }}
             >
               <MapPin className="w-3 h-3" />
-              Belagavi, Karnataka
+              {content.hero.location_label ?? 'Belagavi, Karnataka'}
             </span>
           </div>
 

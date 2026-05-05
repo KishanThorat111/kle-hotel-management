@@ -9,6 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function Programs() {
   const content = useContent();
+  const header = content.programs_header ?? {};
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,18 +39,18 @@ export default function Programs() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16">
           <div>
-            <span className="section-label">Our Programs</span>
+            <span className="section-label">{header.section_label ?? 'Our Programs'}</span>
             <h2
               className="mt-4 font-light leading-tight"
               style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#0D1B3E' }}
             >
-              Degrees That Open{' '}
-              <em style={{ color: '#C9A84C' }}>Hotel Doors</em>
+              {header.heading_main ?? 'Degrees That Open'}{' '}
+              <em style={{ color: '#C9A84C' }}>{header.heading_em ?? 'Hotel Doors'}</em>
             </h2>
             <div className="gold-line mt-5" />
           </div>
           <p className="max-w-xs text-sm leading-relaxed" style={{ color: '#6B7280' }}>
-            3-year undergraduate programs with 6-month industrial training in leading hotel chains.
+            {header.subtitle ?? '3-year undergraduate programs with 6-month industrial training in leading hotel chains.'}
           </p>
         </div>
 
@@ -136,7 +137,7 @@ export default function Programs() {
         {/* Bottom note */}
         <div className="mt-12 text-center">
           <p className="text-sm" style={{ color: '#9CA3AF' }}>
-            All programs include 6-month industrial training + AICTE approved · Affiliated to KLE University
+            {header.bottom_note ?? 'All programs include 6-month industrial training + AICTE approved · Affiliated to KLE University'}
           </p>
         </div>
       </div>

@@ -4,45 +4,14 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { FileText, CheckCircle, MessageSquare, GraduationCap, Phone, Mail, MapPin, ClipboardList } from 'lucide-react';
 import { track } from '@/lib/track';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const steps = [
-  {
-    number: '01',
-    icon: FileText,
-    title: 'Submit Application',
-    desc: 'Fill the online application form with personal details, academic records, and program preference.',
-  },
-  {
-    number: '02',
-    icon: CheckCircle,
-    title: 'Document Verification',
-    desc: '10th & 12th mark sheets, Transfer Certificate, Aadhaar card, and passport-size photographs.',
-  },
-  {
-    number: '03',
-    icon: MessageSquare,
-    title: 'Counseling Interview',
-    desc: 'Personal interaction with faculty to assess aptitude, interest, and communication skills.',
-  },
-  {
-    number: '04',
-    icon: GraduationCap,
-    title: 'Admission Confirmation',
-    desc: 'Fee submission and issue of admission letter. Begin your journey into hospitality!',
-  },
-];
-
-const eligibility = [
-  'Minimum 10+2 (any stream) from a recognized board',
-  'Minimum 50% aggregate marks (45% for SC/ST)',
-  'Age: 17–23 years as on July 1st of admission year',
-  'English proficiency is essential',
-  'Physical fitness and good communication skills',
-];
+const STEP_ICONS = [FileText, CheckCircle, MessageSquare, GraduationCap];
 
 export default function Admission() {
+  const { admission: c, contact } = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,8 +31,9 @@ export default function Admission() {
   }, []);
 
   const openWhatsApp = () => {
-    const msg = encodeURIComponent('Hello, I am interested in admission at KLE Graduate School of Hotel Management, Belagavi. Please guide me through the process.');
-    window.open(`https://wa.me/916364504056?text=${msg}`, '_blank', 'noopener,noreferrer');
+    const msg = encodeURIComponent(c.whatsapp_message);
+    const phone = (contact.whatsapp || '').replace(/[^0-9]/g, '') || '916364504056';
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank', 'noopener,noreferrer');
   };
 
   const openApplyForm = () => {
@@ -81,27 +51,27 @@ export default function Admission() {
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         {/* Header */}
         <div className="adm-reveal opacity-0 text-center max-w-2xl mx-auto mb-16">
-          <span className="section-label-navy">Admissions Open</span>
+          <span className="section-label-navy">{c.section_label}</span>
           <h2
             className="mt-4 font-light leading-tight text-white"
             style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}
           >
-            Begin Your Journey in{' '}
-            <em style={{ color: '#C9A84C' }}>Hospitality</em>
+            {c.heading_main}{' '}
+            <em style={{ color: '#C9A84C' }}>{c.heading_em}</em>
           </h2>
           <div
             className="mx-auto mt-5"
             style={{ width: '48px', height: '2px', background: 'linear-gradient(90deg, #C9A84C, transparent)' }}
           />
           <p className="mt-5 text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            Join the next batch at KLE Graduate School of Hotel Management — Belagavi's premier hotel management institute.
+            {c.description}
           </p>
         </div>
 
         {/* Steps */}
         <div className="adm-reveal opacity-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
-          {steps.map((s, i) => {
-            const Icon = s.icon;
+          {c.steps.map((s, i) => {
+            const Icon = STEP_ICONS[i] ?? FileText;
             return (
               <motion.div
                 key={i}
@@ -132,7 +102,7 @@ export default function Admission() {
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   {s.desc}
                 </p>
-                {i < 3 && (
+                {i < c.steps.length - 1 && (
                   <div
                     className="hidden lg:block absolute top-1/2 -right-px w-4 h-px"
                     style={{ background: 'rgba(201,168,76,0.3)' }}
@@ -151,10 +121,10 @@ export default function Admission() {
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <p className="text-xs tracking-widest uppercase mb-5" style={{ color: 'rgba(201,168,76,0.7)' }}>
-              Eligibility Criteria
+              {c.eligibility_label}
             </p>
             <ul className="space-y-3">
-              {eligibility.map((e, i) => (
+              {c.eligibility.map((e, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
                   <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#C9A84C' }} />
                   {e}
@@ -170,28 +140,28 @@ export default function Admission() {
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               <p className="text-xs tracking-widest uppercase mb-4" style={{ color: 'rgba(201,168,76,0.7)' }}>
-                Get In Touch
+                {c.contact_label}
               </p>
               <div className="space-y-4">
                 <a
-                  href="tel:+919731595657"
+                  href={`tel:${contact.phone || '+919731595657'}`}
                   className="flex items-center gap-3 text-sm group"
                   style={{ color: 'rgba(255,255,255,0.65)' }}
                 >
                   <Phone className="w-4 h-4 shrink-0" style={{ color: '#C9A84C' }} />
-                  <span className="group-hover:text-white transition-colors">+91 97315 95657</span>
+                  <span className="group-hover:text-white transition-colors">{contact.phone || '+91 97315 95657'}</span>
                 </a>
                 <a
-                  href="mailto:info@klehotelmanagement.edu.in"
+                  href={`mailto:${contact.email}`}
                   className="flex items-center gap-3 text-sm group"
                   style={{ color: 'rgba(255,255,255,0.65)' }}
                 >
                   <Mail className="w-4 h-4 shrink-0" style={{ color: '#C9A84C' }} />
-                  <span className="group-hover:text-white transition-colors">info@klehotelmanagement.edu.in</span>
+                  <span className="group-hover:text-white transition-colors">{contact.email}</span>
                 </a>
                 <div className="flex items-start gap-3 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
                   <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#C9A84C' }} />
-                  <span>JNMC Campus, Nehru Nagar, Belagavi - 590 010, Karnataka</span>
+                  <span>{contact.address}</span>
                 </div>
               </div>
             </div>
@@ -205,7 +175,7 @@ export default function Admission() {
                 whileTap={{ scale: 0.98 }}
               >
                 <ClipboardList className="w-4 h-4" />
-                Apply for Admission
+                {c.cta_apply}
               </motion.button>
               <motion.button
                 onClick={openWhatsApp}
@@ -214,13 +184,13 @@ export default function Admission() {
                 whileTap={{ scale: 0.98 }}
               >
                 <MessageSquare className="w-4 h-4" />
-                WhatsApp Us
+                {c.cta_whatsapp}
               </motion.button>
               <a
-                href="tel:08312444348"
+                href={`tel:${c.call_number}`}
                 className="flex-1 btn-outline-navy justify-center"
               >
-                Call Admissions
+                {c.cta_call}
               </a>
             </div>
           </div>

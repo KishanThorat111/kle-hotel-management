@@ -3,42 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const testimonials = [
-  {
-    name: 'Priya Desai',
-    role: 'F&B Supervisor, Taj Hotels',
-    batch: 'Batch of 2020',
-    quote: 'KLE Hotel Management gave me the foundation I needed to crack placements at Taj. The practical training was so thorough that my first day at work felt familiar.',
-    image: img('team'),
-  },
-  {
-    name: 'Arjun Naik',
-    role: 'Senior Chef, ITC Hotels, Bangalore',
-    batch: 'Batch of 2018',
-    quote: 'The culinary labs at KLE are world-class. By the time I graduated, I had already cooked over 200 professional recipes. That confidence is priceless.',
-    image: img('chef-students'),
-  },
-  {
-    name: 'Sneha Kulkarni',
-    role: 'Front Office Manager, JW Marriott',
-    batch: 'Batch of 2021',
-    quote: 'The faculty brought real hotel experience into the classroom. I learned guest handling, PMS systems, and revenue management — all before my internship.',
-    image: img('front-office'),
-  },
-  {
-    name: 'Rahul Patil',
-    role: 'Housekeeping Executive, Oberoi Group',
-    batch: 'Batch of 2019',
-    quote: 'The placement cell at KLE is extremely supportive. They connected me with Oberoi Group and prepared me with mock interviews and grooming sessions.',
-    image: img('accommodation'),
-  },
-];
-
 export default function Testimonials() {
+  const { testimonials: c } = useContent();
+  const testimonials = c.items;
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -72,6 +43,8 @@ export default function Testimonials() {
 
   const t = testimonials[current];
 
+  if (!t) return null;
+
   return (
     <section
       ref={sectionRef}
@@ -82,13 +55,13 @@ export default function Testimonials() {
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         {/* Header */}
         <div className="test-reveal opacity-0 text-center max-w-xl mx-auto mb-16">
-          <span className="section-label">Student Stories</span>
+          <span className="section-label">{c.section_label}</span>
           <h2
             className="mt-4 font-light leading-tight"
             style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', color: '#0D1B3E' }}
           >
-            Words from Our{' '}
-            <em style={{ color: '#C9A84C' }}>Alumni</em>
+            {c.heading_main}{' '}
+            <em style={{ color: '#C9A84C' }}>{c.heading_em}</em>
           </h2>
           <div className="gold-line-center mt-5" />
         </div>

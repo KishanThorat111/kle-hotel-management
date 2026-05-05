@@ -9,12 +9,15 @@ import {
   Sun, Moon, ExternalLink, Info, Sparkles, Menu,
 } from 'lucide-react';
 import { DEFAULT_CONTENT } from '@/lib/siteContent';
-import type { HeroContent, AboutContent, ProgramItem, ContactContent } from '@/lib/siteContent';
+import type { HeroContent, AboutContent, ProgramItem, ContactContent,
+  PlacementsContent, FacilitiesContent, CurriculumContent, StudentLifeContent,
+  TestimonialsContent, AdmissionContent, FooterContent } from '@/lib/siteContent';
 import { broadcastCmsUpdate } from '@/lib/cmsBroadcast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab            = 'dashboard' | 'enquiries' | 'content' | 'media' | 'security' | 'analytics';
-type ContentSection = 'hero' | 'about' | 'programs' | 'contact';
+type ContentSection = 'hero' | 'about' | 'programs' | 'contact'
+  | 'placements' | 'facilities' | 'curriculum' | 'student_life' | 'testimonials' | 'admission' | 'footer';
 type SaveStatus     = 'idle' | 'saving' | 'saved' | 'error';
 
 interface Enquiry {
@@ -1188,7 +1191,11 @@ function ContentTab({ token, images, onRefreshImages, addToast }: {
   const [section, setSection] = useState<ContentSection>('hero');
   const sections: { id: ContentSection; label: string }[] = [
     { id: 'hero', label: 'Hero' }, { id: 'about', label: 'About' },
-    { id: 'programs', label: 'Programs' }, { id: 'contact', label: 'Contact' },
+    { id: 'programs', label: 'Programs' }, { id: 'placements', label: 'Placements' },
+    { id: 'facilities', label: 'Facilities' }, { id: 'curriculum', label: 'Curriculum' },
+    { id: 'student_life', label: 'Student Life' }, { id: 'testimonials', label: 'Testimonials' },
+    { id: 'admission', label: 'Admission' }, { id: 'contact', label: 'Contact' },
+    { id: 'footer', label: 'Footer' },
   ];
   return (
     <div>
@@ -1206,6 +1213,13 @@ function ContentTab({ token, images, onRefreshImages, addToast }: {
       {section === 'about'    && <AboutEditor    token={token} images={images} onRefreshImages={onRefreshImages} addToast={addToast} />}
       {section === 'programs' && <ProgramsEditor token={token} images={images} onRefreshImages={onRefreshImages} addToast={addToast} />}
       {section === 'contact'  && <ContactEditor  token={token}                                                    addToast={addToast} />}
+      {section === 'placements'   && <PlacementsEditor   token={token} images={images} onRefreshImages={onRefreshImages} addToast={addToast} />}
+      {section === 'facilities'   && <FacilitiesEditor   token={token} addToast={addToast} />}
+      {section === 'curriculum'   && <CurriculumEditor   token={token} images={images} onRefreshImages={onRefreshImages} addToast={addToast} />}
+      {section === 'student_life' && <StudentLifeEditor  token={token} addToast={addToast} />}
+      {section === 'testimonials' && <TestimonialsEditor token={token} images={images} onRefreshImages={onRefreshImages} addToast={addToast} />}
+      {section === 'admission'    && <AdmissionEditor    token={token} addToast={addToast} />}
+      {section === 'footer'       && <FooterEditor       token={token} addToast={addToast} />}
     </div>
   );
 }
@@ -1743,6 +1757,532 @@ export default function Admin() {
           <SecurityTab token={token} onLogout={handleLogout} addToast={addToast} />
         )}
       </main>
+    </div>
+  );
+}
+
+// ─── Generic save helper for new content editors ──────────────────────────────
+async function saveContent<T>(key: string, token: string, data: T): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/content/${key}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    const d = await res.json() as { ok: boolean };
+    return !!d.ok;
+  } catch { return false; }
+}
+
+function useContentEditor<T>(key: string, fallback: T) {
+  const [data, setData]             = useState<T>(fallback);
+  const [status, setStatus]         = useState<SaveStatus>('idle');
+  const [customised, setCustomised] = useState(false);
+  const [updatedAt, setUpdatedAt]   = useState('');
+
+  useEffect(() => {
+    fetch(`/api/content/${key}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { ok: boolean; data?: T } | null) => {
+        if (d?.ok && d.data) { setData({ ...fallback, ...d.data }); setCustomised(true); }
+      }).catch(() => null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { data, setData, status, setStatus, customised, setCustomised, updatedAt, setUpdatedAt };
+}
+
+function ListEditor<T>({ label, items, onChange, render, makeNew, addLabel = 'Add Item' }: {
+  label?: string;
+  items: T[];
+  onChange: (next: T[]) => void;
+  render: (item: T, update: (patch: Partial<T>) => void, remove: () => void, idx: number) => ReactNode;
+  makeNew: () => T;
+  addLabel?: string;
+}) {
+  return (
+    <div>
+      {label && <p className="text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: G.textMuted }}>{label}</p>}
+      <div className="space-y-2">
+        {items.map((it, i) => (
+          <div key={i} className="p-3 rounded-lg" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
+            {render(
+              it,
+              (patch) => onChange(items.map((x, j) => j === i ? { ...x, ...patch } : x)),
+              () => onChange(items.filter((_, j) => j !== i)),
+              i,
+            )}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => onChange([...items, makeNew()])}
+        className="mt-2 px-3 py-1.5 text-xs font-medium rounded-md"
+        style={{ background: G.gold, color: '#fff' }}
+      >+ {addLabel}</button>
+    </div>
+  );
+}
+
+function SimpleStringList({ label, items, onChange, placeholder, addLabel = 'Add Item' }: {
+  label?: string; items: string[]; onChange: (next: string[]) => void; placeholder?: string; addLabel?: string;
+}) {
+  return (
+    <div>
+      {label && <p className="text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: G.textMuted }}>{label}</p>}
+      <div className="space-y-2">
+        {items.map((it, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              value={it}
+              placeholder={placeholder}
+              onChange={e => onChange(items.map((x, j) => j === i ? e.target.value : x))}
+              className="flex-1 px-3 py-2 text-sm rounded-md"
+              style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }}
+            />
+            <button
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
+              className="px-3 py-2 text-xs rounded-md"
+              style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}
+            >×</button>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => onChange([...items, ''])}
+        className="mt-2 px-3 py-1.5 text-xs font-medium rounded-md"
+        style={{ background: G.gold, color: '#fff' }}
+      >+ {addLabel}</button>
+    </div>
+  );
+}
+
+// ─── Placements Editor ────────────────────────────────────────────────────────
+function PlacementsEditor({ token, images, onRefreshImages, addToast }: {
+  token: string; images: R2Image[]; onRefreshImages: () => void;
+  addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<PlacementsContent>('placements', DEFAULT_CONTENT.placements);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('placements', token, e.data);
+    if (ok) {
+      e.setStatus('saved'); e.setCustomised(true);
+      e.setUpdatedAt(new Date().toLocaleTimeString('en-IN'));
+      addToast('Placements saved!', 'success'); broadcastCmsUpdate();
+    } else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Placements Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <Field label="Career Section Label"><TInput value={e.data.career_label} onChange={v => e.setData({ ...e.data, career_label: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={3} /></Field></div>
+        <Field label="Floating badge value (e.g. 50+)"><TInput value={e.data.badge_value} onChange={v => e.setData({ ...e.data, badge_value: v })} /></Field>
+        <Field label="Floating badge caption"><TInput value={e.data.badge_caption} onChange={v => e.setData({ ...e.data, badge_caption: v })} /></Field>
+        <Field label="Partners section label"><TInput value={e.data.partners_label} onChange={v => e.setData({ ...e.data, partners_label: v })} /></Field>
+        <div className="md:col-span-2">
+          <ImageField label="Section Image" value={e.data.image} onChange={v => e.setData({ ...e.data, image: v })}
+            token={token} images={images} onRefreshImages={onRefreshImages} />
+        </div>
+        <div className="md:col-span-2">
+          <Field label="Stats (4 items, icons fixed by position)">
+            <ListEditor
+              items={e.data.stats}
+              onChange={items => e.setData({ ...e.data, stats: items })}
+              makeNew={() => ({ value: '', label: '' })}
+              addLabel="Add Stat"
+              render={(it, update, remove) => (
+                <div className="grid grid-cols-12 gap-2">
+                  <input value={it.value} onChange={ev => update({ value: ev.target.value })} placeholder="Value (e.g. 100%)"
+                    className="col-span-4 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                  <input value={it.label} onChange={ev => update({ label: ev.target.value })} placeholder="Label"
+                    className="col-span-7 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                  <button onClick={remove} className="col-span-1 text-xs rounded-md" style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}>×</button>
+                </div>
+              )}
+            />
+          </Field>
+        </div>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Career Paths" items={e.data.career_paths}
+            onChange={items => e.setData({ ...e.data, career_paths: items })} placeholder="e.g. Executive Chef" addLabel="Add Career" />
+        </div>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Partner Brands" items={e.data.partners}
+            onChange={items => e.setData({ ...e.data, partners: items })} placeholder="e.g. Taj Hotels" addLabel="Add Partner" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Facilities Editor ────────────────────────────────────────────────────────
+function FacilitiesEditor({ token, addToast }: {
+  token: string; addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<FacilitiesContent>('facilities', DEFAULT_CONTENT.facilities);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('facilities', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Facilities saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Facilities Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={2} /></Field></div>
+        <Field label="Image 1 caption"><TInput value={e.data.caption_1} onChange={v => e.setData({ ...e.data, caption_1: v })} /></Field>
+        <Field label="Image 2 caption"><TInput value={e.data.caption_2} onChange={v => e.setData({ ...e.data, caption_2: v })} /></Field>
+        <Field label="Image 3 caption"><TInput value={e.data.caption_3} onChange={v => e.setData({ ...e.data, caption_3: v })} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Features (4 items, icons fixed by position)">
+            <ListEditor
+              items={e.data.features}
+              onChange={items => e.setData({ ...e.data, features: items })}
+              makeNew={() => ({ title: '', desc: '' })}
+              addLabel="Add Feature"
+              render={(it, update, remove) => (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input value={it.title} onChange={ev => update({ title: ev.target.value })} placeholder="Title"
+                      className="flex-1 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <button onClick={remove} className="px-3 py-2 text-xs rounded-md" style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}>×</button>
+                  </div>
+                  <textarea value={it.desc} onChange={ev => update({ desc: ev.target.value })} placeholder="Description" rows={2}
+                    className="w-full px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                </div>
+              )}
+            />
+          </Field>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Curriculum Editor ────────────────────────────────────────────────────────
+function CurriculumEditor({ token, images, onRefreshImages, addToast }: {
+  token: string; images: R2Image[]; onRefreshImages: () => void;
+  addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<CurriculumContent>('curriculum', DEFAULT_CONTENT.curriculum);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('curriculum', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Curriculum saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Curriculum Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <Field label="Features label"><TInput value={e.data.features_label} onChange={v => e.setData({ ...e.data, features_label: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={3} /></Field></div>
+        <div className="md:col-span-2"><Field label="Quote"><TTextarea value={e.data.quote} onChange={v => e.setData({ ...e.data, quote: v })} rows={2} /></Field></div>
+        <Field label="Quote attribution"><TInput value={e.data.quote_attribution} onChange={v => e.setData({ ...e.data, quote_attribution: v })} /></Field>
+        <div className="md:col-span-2">
+          <ImageField label="Section Image" value={e.data.image} onChange={v => e.setData({ ...e.data, image: v })}
+            token={token} images={images} onRefreshImages={onRefreshImages} />
+        </div>
+        <div className="md:col-span-2">
+          <Field label="Subjects (6 items, icons fixed by position)">
+            <ListEditor
+              items={e.data.subjects}
+              onChange={items => e.setData({ ...e.data, subjects: items })}
+              makeNew={() => ({ name: '', detail: '' })}
+              addLabel="Add Subject"
+              render={(it, update, remove) => (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input value={it.name} onChange={ev => update({ name: ev.target.value })} placeholder="Subject name"
+                      className="flex-1 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <button onClick={remove} className="px-3 py-2 text-xs rounded-md" style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}>×</button>
+                  </div>
+                  <input value={it.detail} onChange={ev => update({ detail: ev.target.value })} placeholder="Detail"
+                    className="w-full px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                </div>
+              )}
+            />
+          </Field>
+        </div>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Highlights" items={e.data.highlights}
+            onChange={items => e.setData({ ...e.data, highlights: items })} placeholder="e.g. NEP 2020 aligned" addLabel="Add Highlight" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Student Life Editor ──────────────────────────────────────────────────────
+function StudentLifeEditor({ token, addToast }: {
+  token: string; addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<StudentLifeContent>('student_life', DEFAULT_CONTENT.student_life);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('student_life', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Student Life saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Student Life Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={3} /></Field></div>
+        <Field label="Mosaic image 1 caption"><TInput value={e.data.caption_1} onChange={v => e.setData({ ...e.data, caption_1: v })} /></Field>
+        <Field label="Mosaic image 2 caption"><TInput value={e.data.caption_2} onChange={v => e.setData({ ...e.data, caption_2: v })} /></Field>
+        <Field label="Mosaic image 3 caption"><TInput value={e.data.caption_3} onChange={v => e.setData({ ...e.data, caption_3: v })} /></Field>
+        <Field label="Mosaic image 4 caption"><TInput value={e.data.caption_4} onChange={v => e.setData({ ...e.data, caption_4: v })} /></Field>
+        <Field label="Mosaic image 5 caption"><TInput value={e.data.caption_5} onChange={v => e.setData({ ...e.data, caption_5: v })} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Experiences (4 items)">
+            <ListEditor
+              items={e.data.experiences}
+              onChange={items => e.setData({ ...e.data, experiences: items })}
+              makeNew={() => ({ number: '', title: '', desc: '' })}
+              addLabel="Add Experience"
+              render={(it, update, remove) => (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-12 gap-2">
+                    <input value={it.number} onChange={ev => update({ number: ev.target.value })} placeholder="01"
+                      className="col-span-2 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <input value={it.title} onChange={ev => update({ title: ev.target.value })} placeholder="Title"
+                      className="col-span-9 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <button onClick={remove} className="col-span-1 text-xs rounded-md" style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}>×</button>
+                  </div>
+                  <textarea value={it.desc} onChange={ev => update({ desc: ev.target.value })} placeholder="Description" rows={2}
+                    className="w-full px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                </div>
+              )}
+            />
+          </Field>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Testimonials Editor ──────────────────────────────────────────────────────
+function TestimonialsEditor({ token, images, onRefreshImages, addToast }: {
+  token: string; images: R2Image[]; onRefreshImages: () => void;
+  addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<TestimonialsContent>('testimonials', DEFAULT_CONTENT.testimonials);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('testimonials', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Testimonials saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Testimonials Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <div className="md:col-span-2">
+          <p className="text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: G.textMuted }}>Testimonials</p>
+          <div className="space-y-3">
+            {e.data.items.map((it, i) => (
+              <div key={i} className="p-3 rounded-lg space-y-2" style={{ background: G.fieldSubtle, border: `1px solid ${G.border}` }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <input value={it.name} placeholder="Name"
+                    onChange={ev => e.setData({ ...e.data, items: e.data.items.map((x, j) => j === i ? { ...x, name: ev.target.value } : x) })}
+                    className="px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                  <input value={it.role} placeholder="Role / Company"
+                    onChange={ev => e.setData({ ...e.data, items: e.data.items.map((x, j) => j === i ? { ...x, role: ev.target.value } : x) })}
+                    className="px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                  <input value={it.batch} placeholder="Batch"
+                    onChange={ev => e.setData({ ...e.data, items: e.data.items.map((x, j) => j === i ? { ...x, batch: ev.target.value } : x) })}
+                    className="px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                </div>
+                <textarea value={it.quote} placeholder="Quote" rows={3}
+                  onChange={ev => e.setData({ ...e.data, items: e.data.items.map((x, j) => j === i ? { ...x, quote: ev.target.value } : x) })}
+                  className="w-full px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                <ImageField label="Photo" value={it.image}
+                  onChange={v => e.setData({ ...e.data, items: e.data.items.map((x, j) => j === i ? { ...x, image: v } : x) })}
+                  token={token} images={images} onRefreshImages={onRefreshImages} />
+                <button
+                  onClick={() => e.setData({ ...e.data, items: e.data.items.filter((_, j) => j !== i) })}
+                  className="px-3 py-1.5 text-xs rounded-md"
+                  style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}
+                >Remove</button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => e.setData({ ...e.data, items: [...e.data.items, { name: '', role: '', batch: '', quote: '', image: '' }] })}
+            className="mt-2 px-3 py-1.5 text-xs font-medium rounded-md"
+            style={{ background: G.gold, color: '#fff' }}
+          >+ Add Testimonial</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Admission Editor ─────────────────────────────────────────────────────────
+function AdmissionEditor({ token, addToast }: {
+  token: string; addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<AdmissionContent>('admission', DEFAULT_CONTENT.admission);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('admission', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Admission saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Admission Section</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Section Label"><TInput value={e.data.section_label} onChange={v => e.setData({ ...e.data, section_label: v })} /></Field>
+        <Field label="Heading (main)"><TInput value={e.data.heading_main} onChange={v => e.setData({ ...e.data, heading_main: v })} /></Field>
+        <Field label="Heading (gold/em)"><TInput value={e.data.heading_em} onChange={v => e.setData({ ...e.data, heading_em: v })} /></Field>
+        <Field label="Eligibility heading"><TInput value={e.data.eligibility_label} onChange={v => e.setData({ ...e.data, eligibility_label: v })} /></Field>
+        <Field label="Contact heading"><TInput value={e.data.contact_label} onChange={v => e.setData({ ...e.data, contact_label: v })} /></Field>
+        <Field label="Call number (e.g. 08312444348)"><TInput value={e.data.call_number} onChange={v => e.setData({ ...e.data, call_number: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={3} /></Field></div>
+        <div className="md:col-span-2"><Field label="WhatsApp prefilled message"><TTextarea value={e.data.whatsapp_message} onChange={v => e.setData({ ...e.data, whatsapp_message: v })} rows={2} /></Field></div>
+        <Field label="Apply CTA label"><TInput value={e.data.cta_apply} onChange={v => e.setData({ ...e.data, cta_apply: v })} /></Field>
+        <Field label="WhatsApp CTA label"><TInput value={e.data.cta_whatsapp} onChange={v => e.setData({ ...e.data, cta_whatsapp: v })} /></Field>
+        <Field label="Call CTA label"><TInput value={e.data.cta_call} onChange={v => e.setData({ ...e.data, cta_call: v })} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Steps (4 items, icons fixed by position)">
+            <ListEditor
+              items={e.data.steps}
+              onChange={items => e.setData({ ...e.data, steps: items })}
+              makeNew={() => ({ number: '', title: '', desc: '' })}
+              addLabel="Add Step"
+              render={(it, update, remove) => (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-12 gap-2">
+                    <input value={it.number} onChange={ev => update({ number: ev.target.value })} placeholder="01"
+                      className="col-span-2 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <input value={it.title} onChange={ev => update({ title: ev.target.value })} placeholder="Title"
+                      className="col-span-9 px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                    <button onClick={remove} className="col-span-1 text-xs rounded-md" style={{ background: G.fieldSubtle, color: '#f87171', border: `1px solid ${G.border}` }}>×</button>
+                  </div>
+                  <textarea value={it.desc} onChange={ev => update({ desc: ev.target.value })} placeholder="Description" rows={2}
+                    className="w-full px-3 py-2 text-sm rounded-md" style={{ background: G.field, border: `1px solid ${G.border}`, color: G.text }} />
+                </div>
+              )}
+            />
+          </Field>
+        </div>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Eligibility criteria" items={e.data.eligibility}
+            onChange={items => e.setData({ ...e.data, eligibility: items })} placeholder="e.g. Minimum 50% aggregate" addLabel="Add Criterion" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Footer Editor ────────────────────────────────────────────────────────────
+function FooterEditor({ token, addToast }: {
+  token: string; addToast: (msg: string, type: ToastItem['type']) => void;
+}) {
+  const e = useContentEditor<FooterContent>('footer', DEFAULT_CONTENT.footer);
+  const save = async () => {
+    e.setStatus('saving');
+    const ok = await saveContent('footer', token, e.data);
+    if (ok) { e.setStatus('saved'); e.setCustomised(true); e.setUpdatedAt(new Date().toLocaleTimeString('en-IN')); addToast('Footer saved!', 'success'); broadcastCmsUpdate(); }
+    else { e.setStatus('error'); addToast('Save failed', 'error'); }
+    setTimeout(() => e.setStatus('idle'), 2500);
+  };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-xl font-light mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', color: G.text }}>Footer</h3>
+          <StatusBadge customised={e.customised} updatedAt={e.updatedAt} />
+        </div>
+        <SaveBtn status={e.status} onClick={save} />
+      </div>
+      <PublishHint />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="md:col-span-2"><Field label="Brand name"><TInput value={e.data.brand_name} onChange={v => e.setData({ ...e.data, brand_name: v })} /></Field></div>
+        <Field label="Tagline"><TInput value={e.data.tagline} onChange={v => e.setData({ ...e.data, tagline: v })} /></Field>
+        <Field label="Contact heading"><TInput value={e.data.contact_label} onChange={v => e.setData({ ...e.data, contact_label: v })} /></Field>
+        <div className="md:col-span-2"><Field label="Description"><TTextarea value={e.data.description} onChange={v => e.setData({ ...e.data, description: v })} rows={3} /></Field></div>
+        <Field label="Email"><TInput value={e.data.email} onChange={v => e.setData({ ...e.data, email: v })} type="email" /></Field>
+        <Field label="Website"><TInput value={e.data.website} onChange={v => e.setData({ ...e.data, website: v })} /></Field>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Address lines" items={e.data.address_lines}
+            onChange={items => e.setData({ ...e.data, address_lines: items })} placeholder="e.g. JNMC Campus, Nehru Nagar" addLabel="Add Line" />
+        </div>
+        <div className="md:col-span-2">
+          <SimpleStringList label="Phone numbers" items={e.data.phones}
+            onChange={items => e.setData({ ...e.data, phones: items })} placeholder="e.g. 0831-2444348" addLabel="Add Phone" />
+        </div>
+        <div className="md:col-span-2"><Field label="Copyright text (year is prepended automatically)"><TInput value={e.data.copyright} onChange={v => e.setData({ ...e.data, copyright: v })} /></Field></div>
+        <div className="md:col-span-2"><Field label="Copyright subtext"><TInput value={e.data.copyright_subtext} onChange={v => e.setData({ ...e.data, copyright_subtext: v })} /></Field></div>
+      </div>
     </div>
   );
 }

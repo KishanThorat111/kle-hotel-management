@@ -4,33 +4,14 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ChefHat, UtensilsCrossed, Bed, CalendarDays } from 'lucide-react';
 import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const features = [
-  {
-    icon: ChefHat,
-    title: 'Professional Kitchen Labs',
-    desc: 'State-of-the-art kitchen equipment including commercial ranges, convection ovens, and pastry stations.',
-  },
-  {
-    icon: UtensilsCrossed,
-    title: 'Training Restaurant',
-    desc: 'Live training restaurant where students gain real service experience in a fine-dining environment.',
-  },
-  {
-    icon: Bed,
-    title: 'Student Hostel',
-    desc: 'On-campus accommodation with modern facilities, Wi-Fi, and 24-hour security at JNMC Campus.',
-  },
-  {
-    icon: CalendarDays,
-    title: 'Convention Center',
-    desc: 'Multipurpose event hall for workshops, cultural programs, and industry interaction meets.',
-  },
-];
+const FEATURE_ICONS = [ChefHat, UtensilsCrossed, Bed, CalendarDays];
 
 export default function Facilities() {
+  const { facilities: c } = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,17 +35,17 @@ export default function Facilities() {
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         {/* Header */}
         <div className="fac-reveal opacity-0 text-center max-w-2xl mx-auto mb-16">
-          <span className="section-label">Campus & Facilities</span>
+          <span className="section-label">{c.section_label}</span>
           <h2
             className="mt-4 font-light leading-tight"
             style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#0D1B3E' }}
           >
-            Equipped for the{' '}
-            <em style={{ color: '#C9A84C' }}>Real World</em>
+            {c.heading_main}{' '}
+            <em style={{ color: '#C9A84C' }}>{c.heading_em}</em>
           </h2>
           <div className="gold-line-center mt-5" />
           <p className="mt-5 text-base leading-relaxed" style={{ color: '#6B7280' }}>
-            Industry-standard training facilities at the JNMC Campus, designed to replicate actual hotel environments.
+            {c.description}
           </p>
         </div>
 
@@ -83,7 +64,7 @@ export default function Facilities() {
               className="absolute bottom-4 left-4 px-4 py-2"
               style={{ background: 'rgba(13,27,62,0.85)' }}
             >
-              <p className="text-xs tracking-widest uppercase text-white">Kitchen Laboratory</p>
+              <p className="text-xs tracking-widest uppercase text-white">{c.caption_1}</p>
             </div>
           </div>
 
@@ -101,7 +82,7 @@ export default function Facilities() {
                 className="absolute bottom-3 left-3 px-3 py-1.5"
                 style={{ background: 'rgba(13,27,62,0.85)' }}
               >
-                <p className="text-[10px] tracking-widest uppercase text-white">Hostel & Accommodation</p>
+                <p className="text-[10px] tracking-widest uppercase text-white">{c.caption_2}</p>
               </div>
             </div>
             <div className="overflow-hidden relative" style={{ flex: 1, minHeight: '200px' }}>
@@ -116,7 +97,7 @@ export default function Facilities() {
                 className="absolute bottom-3 left-3 px-3 py-1.5"
                 style={{ background: 'rgba(13,27,62,0.85)' }}
               >
-                <p className="text-[10px] tracking-widest uppercase text-white">JNMC Campus</p>
+                <p className="text-[10px] tracking-widest uppercase text-white">{c.caption_3}</p>
               </div>
             </div>
           </div>
@@ -124,8 +105,8 @@ export default function Facilities() {
 
         {/* Feature cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {features.map((f, i) => {
-            const Icon = f.icon;
+          {c.features.map((f, i) => {
+            const Icon = FEATURE_ICONS[i] ?? ChefHat;
             return (
               <motion.div
                 key={i}

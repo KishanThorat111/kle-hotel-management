@@ -295,7 +295,7 @@ export default {
         // GET /api/content/site — all sections (public)
         if (request.method === 'GET' && url.pathname === '/api/content/site') {
           const { results } = await env.DB.prepare(
-            `SELECT key, value FROM site_content WHERE key IN ('hero','about','programs','contact')`,
+            `SELECT key, value FROM site_content WHERE key IN ('hero','about','programs','programs_header','contact','placements','facilities','curriculum','student_life','testimonials','admission','footer')`,
           ).all();
           const content: Record<string, unknown> = {};
           for (const row of results) {

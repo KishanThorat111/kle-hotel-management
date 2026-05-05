@@ -64,27 +64,27 @@ export default function About() {
               style={{ background: '#0D1B3E', minWidth: '180px' }}
             >
               <p className="text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(201,168,76,0.7)' }}>Est.</p>
-              <p className="text-4xl font-light" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', color: '#FFFFFF' }}>1997</p>
-              <p className="text-[10px] tracking-wider uppercase mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Belagavi, Karnataka</p>
+              <p className="text-4xl font-light" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', color: '#FFFFFF' }}>{content.about.established_year ?? '1997'}</p>
+              <p className="text-[10px] tracking-wider uppercase mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{content.about.established_caption ?? 'Belagavi, Karnataka'}</p>
             </div>
           </div>
 
           <div>
             <div className="about-reveal opacity-0">
-              <span className="section-label">About KLE Hotel Management</span>
+              <span className="section-label">{content.about.section_label ?? 'About KLE Hotel Management'}</span>
             </div>
             <h2
               className="about-reveal opacity-0 mt-5 font-light leading-tight"
               style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#0D1B3E' }}
             >
-              A Legacy of <em style={{ color: '#C9A84C' }}>Hospitality Excellence</em> Since 1997
+              {content.about.heading_main ?? 'A Legacy of'} <em style={{ color: '#C9A84C' }}>{content.about.heading_em ?? 'Hospitality Excellence'}</em>{content.about.heading_after ? ` ${content.about.heading_after}` : ' Since 1997'}
             </h2>
             <div className="about-reveal opacity-0 gold-line mt-6 mb-6" />
             <p className="about-reveal opacity-0 text-base leading-relaxed" style={{ color: '#4B5563' }}>
-              KLE Graduate School of Hotel Management & Catering Technology is a premier institution at JNMC Campus, Nehru Nagar, Belagavi. Part of the prestigious KLE Society — one of Karnataka's largest educational groups with 270+ institutions since 1916.
+              {content.about.desc_1}
             </p>
             <p className="about-reveal opacity-0 text-base leading-relaxed mt-4" style={{ color: '#4B5563' }}>
-              We provide world-class hospitality education through an industry-integrated curriculum, expert faculty with leading hotel experience, and 100% placement assistance to every student.
+              {content.about.desc_2}
             </p>
             <div className="about-reveal opacity-0 flex flex-wrap gap-8 mt-10">
               {content.about.stats.map((s, i) => (
@@ -95,7 +95,7 @@ export default function About() {
               ))}
             </div>
             <div className="about-reveal opacity-0 mt-8 px-5 py-3 inline-block" style={{ background: '#F4F3F0', borderLeft: '3px solid #C9A84C' }}>
-              <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: '#0D1B3E' }}>Learn · Prosper · Excel</p>
+              <p className="text-xs tracking-[0.25em] uppercase font-medium" style={{ color: '#0D1B3E' }}>{content.about.tagline ?? 'Learn · Prosper · Excel'}</p>
             </div>
           </div>
         </div>

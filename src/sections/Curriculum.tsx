@@ -3,29 +3,14 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { ChefHat, Coffee, ConciergeBell, Sparkles, Cake, CalendarCheck } from 'lucide-react';
-import { img } from '@/lib/cdn';
+import { useContent } from '@/contexts/ContentContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const subjects = [
-  { icon: ChefHat, name: 'Food Production & Cooking', detail: 'Classical & modern culinary arts, nutrition, menu planning' },
-  { icon: Coffee, name: 'Food & Beverage Service', detail: 'Restaurant operations, bar management, fine dining etiquette' },
-  { icon: ConciergeBell, name: 'Front Office Operations', detail: 'PMS systems, reservations, guest relations, check-in/out' },
-  { icon: Sparkles, name: 'Housekeeping Management', detail: 'Room care, laundry, public area maintenance standards' },
-  { icon: Cake, name: 'Bakery & Confectionery', detail: 'Bread making, pastry, chocolate work, dessert arts' },
-  { icon: CalendarCheck, name: 'Event Management', detail: 'Banquet planning, MICE, conference coordination' },
-];
-
-const highlights = [
-  'NEP 2020 aligned curriculum',
-  '6–12 month industrial training',
-  'Practical lab sessions daily',
-  'Industry expert guest lectures',
-  'International exposure visits',
-  'Career mentorship program',
-];
+const SUBJECT_ICONS = [ChefHat, Coffee, ConciergeBell, Sparkles, Cake, CalendarCheck];
 
 export default function Curriculum() {
+  const { curriculum: c } = useContent();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,14 +41,14 @@ export default function Curriculum() {
           {/* Left: subjects + highlights */}
           <div>
             <div className="curr-reveal opacity-0">
-              <span className="section-label-navy">Curriculum Highlights</span>
+              <span className="section-label-navy">{c.section_label}</span>
             </div>
             <h2
               className="curr-reveal opacity-0 mt-4 font-light leading-tight text-white"
               style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: 'clamp(1.9rem, 4vw, 3rem)' }}
             >
-              A Curriculum Built for{' '}
-              <em style={{ color: '#C9A84C' }}>Industry Readiness</em>
+              {c.heading_main}{' '}
+              <em style={{ color: '#C9A84C' }}>{c.heading_em}</em>
             </h2>
             <div
               className="curr-reveal opacity-0 mt-5 mb-7"
@@ -73,13 +58,13 @@ export default function Curriculum() {
               className="curr-reveal opacity-0 text-base leading-relaxed mb-10"
               style={{ color: 'rgba(255,255,255,0.6)' }}
             >
-              Our NEP 2020-aligned, 3-year program combines academic theory with intensive practical training — preparing students for immediate employment in premium hospitality roles.
+              {c.description}
             </p>
 
             {/* Subjects list */}
             <div className="space-y-3">
-              {subjects.map((s, i) => {
-                const Icon = s.icon;
+              {c.subjects.map((s, i) => {
+                const Icon = SUBJECT_ICONS[i] ?? ChefHat;
                 return (
                   <motion.div
                     key={i}
@@ -109,10 +94,10 @@ export default function Curriculum() {
             {/* Highlights grid */}
             <div className="curr-reveal opacity-0 mt-10">
               <p className="text-[10px] tracking-widest uppercase mb-4" style={{ color: 'rgba(201,168,76,0.7)' }}>
-                Program Features
+                {c.features_label}
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {highlights.map((h, i) => (
+                {c.highlights.map((h, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#C9A84C' }} />
                     {h}
@@ -129,7 +114,7 @@ export default function Curriculum() {
               style={{ aspectRatio: '3/4', maxHeight: '600px', border: '1px solid rgba(201,168,76,0.2)' }}
             >
               <img
-                src={img('chef-students')}
+                src={c.image}
                 alt="Students in culinary training"
                 className="w-full h-full object-cover"
                 loading="lazy"
@@ -149,10 +134,10 @@ export default function Curriculum() {
                 className="text-lg font-light italic text-white"
                 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
               >
-                "Theory without practice is incomplete. We ensure students learn by doing."
+                "{c.quote}"
               </p>
               <p className="text-xs mt-2" style={{ color: 'rgba(201,168,76,0.7)' }}>
-                — Department of Culinary Arts
+                {c.quote_attribution}
               </p>
             </div>
           </div>

@@ -13,10 +13,18 @@ const Ctx = createContext<SiteContent>(DEFAULT_CONTENT);
 
 function merge(partial: Partial<SiteContent> | undefined): SiteContent {
   return {
-    hero:     { ...DEFAULT_CONTENT.hero,    ...partial?.hero },
-    about:    { ...DEFAULT_CONTENT.about,   ...partial?.about },
-    programs: partial?.programs ?? DEFAULT_CONTENT.programs,
-    contact:  { ...DEFAULT_CONTENT.contact, ...partial?.contact },
+    hero:         { ...DEFAULT_CONTENT.hero,         ...partial?.hero },
+    about:        { ...DEFAULT_CONTENT.about,        ...partial?.about },
+    programs:     partial?.programs ?? DEFAULT_CONTENT.programs,
+    programs_header: { ...DEFAULT_CONTENT.programs_header, ...partial?.programs_header },
+    contact:      { ...DEFAULT_CONTENT.contact,      ...partial?.contact },
+    placements:   { ...DEFAULT_CONTENT.placements,   ...partial?.placements },
+    facilities:   { ...DEFAULT_CONTENT.facilities,   ...partial?.facilities },
+    curriculum:   { ...DEFAULT_CONTENT.curriculum,   ...partial?.curriculum },
+    student_life: { ...DEFAULT_CONTENT.student_life, ...partial?.student_life },
+    testimonials: { ...DEFAULT_CONTENT.testimonials, ...partial?.testimonials },
+    admission:    { ...DEFAULT_CONTENT.admission,    ...partial?.admission },
+    footer:       { ...DEFAULT_CONTENT.footer,       ...partial?.footer },
   };
 }
 
