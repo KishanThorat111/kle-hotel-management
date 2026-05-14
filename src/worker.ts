@@ -6,7 +6,7 @@
  *   - Session: UUID token stored in D1 (8 h TTL), validated on every admin request
  *   - PIN change: PBKDF2-hashed new PIN stored in D1
  *   - Enquiry: IP rate-limited (5/hour)
- *   - Uploads: content-type check, 10 MB cap, sanitised filenames
+ *   - Uploads: content-type check, sanitised filenames
  *
  * Public routes:
  *   POST   /api/auth              — login → {token, expires_at}
@@ -62,7 +62,6 @@ const R2_CDN             = 'https://pub-fd0ab08dad314949855afdfccd5131ec.r2.dev'
 const SESSION_TTL_MS     = 8 * 3600 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS    = 15 * 60 * 1000;
-const MAX_UPLOAD_BYTES   = 10 * 1024 * 1024;
 const CONTENT_KEY_RE     = /^[a-z_]{1,50}$/;
 const PBKDF2_ITERS       = 100_000;
 
@@ -337,7 +336,6 @@ export default {
           const ct = request.headers.get('Content-Type') ?? '';
           if (!ct.startsWith('image/')) return json({ ok: false, error: 'Must be an image' }, 400, origin);
           const buffer = await request.arrayBuffer();
-          if (buffer.byteLength > MAX_UPLOAD_BYTES) return json({ ok: false, error: 'Max 10 MB' }, 400, origin);
           const rawName  = url.searchParams.get('filename') ?? `upload-${Date.now()}.webp`;
           const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 100);
           const key      = `images/${safeName}`;

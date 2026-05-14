@@ -114,7 +114,6 @@ async function compressToWebP(file: File): Promise<Blob> {
 }
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
 interface UploadResult {
   url: string;
@@ -126,9 +125,6 @@ interface UploadResult {
 function validateFile(file: File): string | null {
   if (!ACCEPTED_TYPES.includes(file.type)) {
     return `Unsupported file type. Use JPG, PNG, WebP, or GIF.`;
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return `File too large (${fmtBytes(file.size)}). Maximum is ${fmtBytes(MAX_UPLOAD_BYTES)}.`;
   }
   return null;
 }
